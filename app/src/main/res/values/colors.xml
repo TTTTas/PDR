@@ -2,4 +2,7 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="colorPrimary">#303F9F</color> <!-- 星空深蓝色 -->
+    <color name="colorPrimaryDark">#3F51B5</color> <!-- 星空更深的蓝色 -->
+    <!-- 如果需要，可以添加 colorSecondary -->
 </resources>

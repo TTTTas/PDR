@@ -4,6 +4,7 @@
 
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
     <application
         android:allowBackup="true"
@@ -18,30 +19,25 @@
         <activity
             android:name=".RealTimePDRActivity"
             android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            <!-- Removed MAIN and LAUNCHER intent-filter -->
         </activity>
         <activity
             android:name=".DataCollectionActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            android:exported="true"
+            android:requestLegacyExternalStorage="true"
+            >
+            <!-- Removed MAIN and LAUNCHER intent-filter -->
         </activity>
         <activity
             android:name=".MainActivity"
             android:exported="true">
+            <!-- This is the only activity with MAIN and LAUNCHER intent-filter -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- Add other activities here without MAIN and LAUNCHER intent-filter -->
     </application>
 
 </manifest>
