@@ -13,9 +13,12 @@ import android.widget.Button;
 import android.content.Intent;
 import java.util.List;
 import androidx.appcompat.widget.Toolbar;
+import android.view.MotionEvent;
+import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity  {
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,9 +50,5 @@ public class MainActivity extends AppCompatActivity  {
                 startActivity(intent);
             }
         });
-
-
-    }
-
-
+            }
 }

@@ -85,7 +85,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginTop="136dp"
-        android:drawableStart="@drawable/baseline_timer_24"
+        android:drawableStart="@drawable/clock"
         android:drawablePadding="8dp"
         android:text="已采集时间: 0秒"
         android:textSize="18sp"
