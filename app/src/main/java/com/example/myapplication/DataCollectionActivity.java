@@ -57,7 +57,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_GAME);
             // 为新的采集会话创建文件名
             initialTimestampfile = System.currentTimeMillis();
-            currentSessionFileName = "SensorData_" + initialTimestampfile/ 1_000.0f + ".txt";
+            currentSessionFileName = "SensorData_" + initialTimestampfile + ".txt";
             isCollectingData = true;
         }
     }
