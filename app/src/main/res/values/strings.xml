@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">My Application</string>
+    <string name="Realtime_bt1">Start</string>
+    <string name="Realtime_bt2">Pause</string>
+    <string name="Realtime_bt3">Stop</string>
+    <string name="Realtime_bt4">Settings</string>
+
 </resources>
