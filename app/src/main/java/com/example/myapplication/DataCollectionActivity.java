@@ -3,6 +3,7 @@ package com.example.myapplication;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.os.Environment;
 import android.widget.Button;
 import android.widget.TextView;
 import android.hardware.Sensor;
@@ -11,6 +12,13 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.widget.Toast;
 import androidx.appcompat.widget.Toolbar;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DataCollectionActivity extends AppCompatActivity implements SensorEventListener {
     private SensorManager sensorManager;
@@ -22,6 +30,45 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private TextView collectionTimeTextView;
     private String currentSessionFileName;
     private StringBuilder sensorDataBuilder = new StringBuilder();
+    private TrajectoryView trajectoryView;
+
+    private void processPDR(String filename) {
+        List<String> sensorDataLines = new ArrayList<>();
+        // 获取外部存储的公共文档目录
+        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), filename);
+
+        try {
+            // 打开文件输入流
+            FileInputStream fis = new FileInputStream(file);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(fis));
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sensorDataLines.add(line);
+            }
+
+            reader.close();
+            fis.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "读取数据文件失败！", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+
+        // 创建PDR处理器实例并处理数据
+        PDRProcessor pdrProcessor = new PDRProcessor();
+        List<double[]> trajectory = pdrProcessor.processSensorData(sensorDataLines);
+
+        // 将轨迹数据传递给TrajectoryView进行绘制
+        runOnUiThread(() -> {
+            if (trajectoryView != null) {
+                trajectoryView.setTrajectory(trajectory);
+            }
+        });
+
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,6 +84,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         Button startButton = findViewById(R.id.startButton);
         Button stopButton = findViewById(R.id.stopButton);
         collectionTimeTextView = findViewById(R.id.collectionTime);
+        trajectoryView = findViewById(R.id.trajectoryView);
 
         // 获取传感器服务
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -47,6 +95,10 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         // 设置按钮监听器
         startButton.setOnClickListener(v -> startDataCollection());
         stopButton.setOnClickListener(v -> stopDataCollection());
+
+        // 事后PDR按钮
+        Button processPDRButton = findViewById(R.id.processPDRButton);
+        processPDRButton.setOnClickListener(v -> processPDR(currentSessionFileName));
     }
 
     private void startDataCollection() {

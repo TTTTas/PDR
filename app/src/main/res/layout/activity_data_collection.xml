@@ -26,23 +26,22 @@
         android:id="@+id/startButton"
         android:layout_width="132dp"
         android:layout_height="64dp"
-        android:layout_marginStart="32dp"
-        android:layout_marginTop="128dp"
+        android:layout_marginStart="28dp"
+        android:layout_marginTop="92dp"
         android:text="开始采集"
         android:textSize="20sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-
     <Button
         android:id="@+id/stopButton"
         android:layout_width="132dp"
         android:layout_height="64dp"
-        android:layout_marginTop="128dp"
+        android:layout_marginTop="92dp"
         android:text="结束采集"
         android:textSize="20sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.867"
+        app:layout_constraintHorizontal_bias="0.87"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -51,18 +50,20 @@
         android:layout_width="408dp"
         android:layout_height="24dp"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="364dp"
+        android:layout_marginTop="264dp"
         android:text="加速度计数据："
         android:textSize="15sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/toolbar" />
+
+    <!-- 在activity_data_collection.xml布局文件中添加一个新的按钮 -->
 
     <TextView
         android:id="@+id/gyroscopeData"
         android:layout_width="408dp"
         android:layout_height="24dp"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="12dp"
         android:text="陀螺仪数据："
         android:textSize="15sp"
         app:layout_constraintStart_toStartOf="parent"
@@ -73,7 +74,7 @@
         android:layout_width="408dp"
         android:layout_height="24dp"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="12dp"
         android:text="磁力计数据："
         android:textSize="15sp"
         app:layout_constraintStart_toStartOf="parent"
@@ -83,13 +84,39 @@
         android:id="@+id/collectionTime"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="136dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="108dp"
         android:drawableStart="@drawable/clock"
         android:drawablePadding="8dp"
         android:text="已采集时间: 0秒"
         android:textSize="18sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/startButton" />
+
+    <Button
+        android:id="@+id/processPDRButton"
+        android:layout_width="142dp"
+        android:layout_height="74dp"
+        android:text="事后PDR"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.261" />
+
+    <com.example.myapplication.TrajectoryView
+        android:id="@+id/trajectoryView"
+        android:layout_width="413dp"
+        android:layout_height="208dp"
+        android:layout_marginTop="26dp"
+        android:background="#e5f9ff"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/magnetometerData"
+        app:layout_constraintVertical_bias="1.0" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
