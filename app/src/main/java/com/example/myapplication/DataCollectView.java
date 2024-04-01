@@ -170,6 +170,9 @@ public class DataCollectView extends LinearLayout {
                         accelz.add(new Entry(time, z));
                         if (isupdate)
                             updateChartData(accelx,accely, accelz, accelchart);
+                        accelx.clear();
+                        accely.clear();
+                        accelz.clear();
                         break;
                     case Sensor.TYPE_GYROSCOPE:
                         gyrox.add(new Entry(time, x));
@@ -177,6 +180,9 @@ public class DataCollectView extends LinearLayout {
                         gyroz.add(new Entry(time, z));
                         if (isupdate)
                             updateChartData(gyrox,gyroy, gyroz, gyrochart);
+                        gyrox.clear();
+                        gyroy.clear();
+                        gyroz.clear();
                         break;
                     case Sensor.TYPE_MAGNETIC_FIELD:
                         magnx.add(new Entry(time, x));
@@ -184,6 +190,9 @@ public class DataCollectView extends LinearLayout {
                         magnz.add(new Entry(time, z));
                         if (isupdate)
                             updateChartData(magnx,magny, magnz, magnchart);
+                        magnx.clear();
+                        magny.clear();
+                        magnz.clear();
                         break;
 
                 }
