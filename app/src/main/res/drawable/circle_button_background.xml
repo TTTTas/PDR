@@ -8,7 +8,7 @@
     <!-- 设置按钮的边框为黑色 -->
     <stroke
         android:width="2dp"
-        android:color="#000000" />
+        android:color="#C9252525" />
 
     <!-- 可选的：设置按钮的大小 -->
     <size

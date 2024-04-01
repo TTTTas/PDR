@@ -1,17 +1,20 @@
 package com.example.myapplication;
 
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.os.Bundle;
-import android.os.Environment;
-import android.widget.Button;
-import android.widget.TextView;
 import android.hardware.Sensor;
-import android.hardware.SensorManager;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.os.Bundle;
+import android.os.Environment;
+import android.view.View;
+import android.widget.ImageButton;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.viewpager.widget.ViewPager;
+
+import com.github.mikephil.charting.charts.LineChart;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -23,14 +26,14 @@ import java.util.List;
 public class DataCollectionActivity extends AppCompatActivity implements SensorEventListener {
     private SensorManager sensorManager;
     private Sensor accelerometer, gyroscope, magnetometer;
-    private TextView accelerometerData, gyroscopeData, magnetometerData;
+    private DataCollectView dataCollectView;
     private boolean isCollectingData = false;
     private long initialTimestamp = 0;
     private long initialTimestampfile = 0;
-    private TextView collectionTimeTextView;
     private String currentSessionFileName;
-    private StringBuilder sensorDataBuilder = new StringBuilder();
-    private TrajectoryView trajectoryView;
+    private final StringBuilder sensorDataBuilder = new StringBuilder();
+    private TrajectoryMap trajectoryView;
+    private ViewPager viewPager;
 
     private void processPDR(String filename) {
         List<String> sensorDataLines = new ArrayList<>();
@@ -63,7 +66,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         // 将轨迹数据传递给TrajectoryView进行绘制
         runOnUiThread(() -> {
             if (trajectoryView != null) {
-                trajectoryView.setTrajectory(trajectory);
+                trajectoryView.drawMap(trajectory);
             }
         });
 
@@ -78,13 +81,20 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         setSupportActionBar(toolbar);
 
         // 初始化UI组件
-        accelerometerData = findViewById(R.id.accelerometerData);
-        gyroscopeData = findViewById(R.id.gyroscopeData);
-        magnetometerData = findViewById(R.id.magnetometerData);
-        Button startButton = findViewById(R.id.startButton);
-        Button stopButton = findViewById(R.id.stopButton);
-        collectionTimeTextView = findViewById(R.id.collectionTime);
+
+        ImageButton startButton = findViewById(R.id.StartButton);
+        ImageButton pauseButton = findViewById(R.id.PauseButton);
+        ImageButton stopButton = findViewById(R.id.StopButton);
+        ImageButton settingButton = findViewById(R.id.SettingButton);
+        dataCollectView = findViewById(R.id.datacollectview);
         trajectoryView = findViewById(R.id.trajectoryView);
+        viewPager = findViewById(R.id.viewpager);
+        ArrayList<View> viewarray = new ArrayList<>();
+        viewarray.add(dataCollectView);
+        viewarray.add(trajectoryView);
+        MyPagerAdapter adapter = new MyPagerAdapter(viewarray);
+        viewPager = findViewById(R.id.viewpager);
+        viewPager.setAdapter(adapter);
 
         // 获取传感器服务
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -97,9 +107,12 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         stopButton.setOnClickListener(v -> stopDataCollection());
 
         // 事后PDR按钮
-        Button processPDRButton = findViewById(R.id.processPDRButton);
+        ImageButton processPDRButton = findViewById(R.id.processPDRButton);
         processPDRButton.setOnClickListener(v -> processPDR(currentSessionFileName));
+
+
     }
+
 
     private void startDataCollection() {
         if (!isCollectingData) {
@@ -146,27 +159,12 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             sensorDataBuilder.append(sensorDataLine).append("\n");
 
             // 格式化传感器数据字符串
-            String dataString = String.format("%s: %.3f s  %.4f %.4f %.4f",
+            String dataString = String.format("%s:\n %.4f %.4f %.4f",
                     getSensorString(event.sensor.getType()),
-                    relativeTimestamp, event.values[0], event.values[1], event.values[2]);
+                    event.values[0], event.values[1], event.values[2]);
 
-            // 根据传感器类型更新UI
-            switch (event.sensor.getType()) {
-                case Sensor.TYPE_ACCELEROMETER:
-                    accelerometerData.setText(dataString);
-                    break;
-                case Sensor.TYPE_GYROSCOPE:
-                    gyroscopeData.setText(dataString);
-                    break;
-                case Sensor.TYPE_MAGNETIC_FIELD:
-                    magnetometerData.setText(dataString);
-                    break;
+            dataCollectView.update(relativeTimestamp, event.values[0], event.values[1], event.values[2], event.sensor.getType(), dataString);
 
-            }
-
-
-            // 更新已采集时间的TextView
-            collectionTimeTextView.setText(String.format("已采集时间: %.3f秒", relativeTimestamp));
 
         }
     }

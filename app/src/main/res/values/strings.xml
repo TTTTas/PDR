@@ -1,8 +1,10 @@
 <resources>
     <string name="app_name">My Application</string>
-    <string name="Realtime_bt1">Start</string>
-    <string name="Realtime_bt2">Pause</string>
-    <string name="Realtime_bt3">Stop</string>
-    <string name="Realtime_bt4">Settings</string>
+    <string name="Start_btn">Start</string>
+    <string name="Pause_btn">Pause</string>
+    <string name="Stop_btn">Stop</string>
+    <string name="Setting_btn">Settings</string>
+    <string name="PDR_btn" />
+    <string name="viewpager" />
 
 </resources>
