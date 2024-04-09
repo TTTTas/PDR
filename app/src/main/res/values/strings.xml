@@ -6,5 +6,6 @@
     <string name="Setting_btn">Settings</string>
     <string name="PDR_btn" />
     <string name="viewpager" />
+    <string name="Expand_btn" />
 
 </resources>

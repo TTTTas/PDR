@@ -42,7 +42,7 @@
         android:layout_centerHorizontal="true"
         android:layout_gravity="bottom|center"
         android:layout_marginBottom="20dp"
-        android:background="@drawable/btnborder"
+        android:background="@drawable/btn_border"
         android:gravity="center"
         android:orientation="horizontal">
 
