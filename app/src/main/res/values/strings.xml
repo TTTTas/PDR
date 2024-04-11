@@ -8,5 +8,7 @@
     <string name="viewpager" />
     <string name="Expand_btn" />
     <string name="add_pro">add_project_btn</string>
+    <string name="save_pic_btn">save_pic_btn</string>
+    <string name="pro_hint_word">请输入工程名称</string>
 
 </resources>

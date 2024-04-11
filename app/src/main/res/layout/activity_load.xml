@@ -20,7 +20,7 @@
             app:hideOnScroll="true"/>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/floatingActionButton"
+            android:id="@+id/btn_add_proj"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:backgroundTint="@color/colorYellow"
@@ -57,8 +57,17 @@
         android:id="@+id/pro_scroll"
         android:layout_below="@id/pro_toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
+        android:layout_height="wrap_content"
+        android:clickable="false"
+        android:focusable="true">
+        <LinearLayout
+            android:id="@+id/proj_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:overScrollMode="ifContentScrolls"
+            android:orientation="vertical"
+            android:clickable="false"
+            android:focusable="true" />
     </androidx.core.widget.NestedScrollView>
     </RelativeLayout>
 

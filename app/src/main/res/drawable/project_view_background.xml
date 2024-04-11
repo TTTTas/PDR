@@ -8,22 +8,10 @@
                 android:left="1dp"
                 android:right="1dp"
                 android:top="1dp" />
-            <solid android:color="#50CCCCCC" />
-            <corners android:radius="10dp" />
-        </shape>
-    </item>
-    <item>
-        <shape android:shape="rectangle">
-            <padding
-                android:bottom="1dp"
-                android:left="1dp"
-                android:right="1dp"
-                android:top="1dp" />
             <solid android:color="#30CCCCCC" />
-            <corners android:radius="10dp" />
+            <corners android:radius="20dp" />
         </shape>
     </item>
-
 
     <item>
         <shape android:shape="rectangle">
@@ -33,7 +21,7 @@
                 android:right="1dp"
                 android:top="1dp" />
             <solid android:color="#20CCCCCC" />
-            <corners android:radius="10dp" />
+            <corners android:radius="20dp" />
         </shape>
     </item>
 
@@ -45,18 +33,7 @@
                 android:right="1dp"
                 android:top="1dp" />
             <solid android:color="#10CCCCCC" />
-            <corners android:radius="10dp" />
-        </shape>
-    </item>
-    <item>
-        <shape android:shape="rectangle">
-            <padding
-                android:bottom="1dp"
-                android:left="1dp"
-                android:right="1dp"
-                android:top="1dp" />
-            <solid android:color="#00CCCCCC" />
-            <corners android:radius="10dp" />
+            <corners android:radius="20dp" />
         </shape>
     </item>
     <!-- 中心背景 -->
@@ -66,7 +43,7 @@
             android:useLevel="false">
             <!-- 实心 -->
             <solid android:color="#ffffff" />
-            <corners android:radius="10dp" />
+            <corners android:radius="20dp" />
             <stroke android:color="@color/gray" />
             <padding
                 android:left="1dp"

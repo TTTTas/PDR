@@ -9,6 +9,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
@@ -51,9 +52,12 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private LineChart trajectoryView;
     private ViewPager viewPager;
     private ImageButton expandButton;
+    private ImageButton saveButton;
     private LinearLayout Btn_container;
     private boolean isExpanded = false;
-
+    private MapData mapData;
+    String dataPath;
+    String coverPath;
     private void processPDR(String filename) {
 
         List<String> sensorDataLines = new ArrayList<>();
@@ -82,78 +86,13 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         List<double[]> trajectory = pdrProcessor.processSensorData(sensorDataLines);
         if (trajectory.size() != 0) {
             Toast.makeText(this, "解算成功！", Toast.LENGTH_SHORT).show();
-            drawMap(trajectory);
+            //drawMap(trajectory);
+            mapData.add_data(trajectory);
+            mapData.change_stop_flag();
+            mapData.invalid_map(trajectoryView);
         }
     }
 
-    private void mapInitial() {
-        trajectoryView.setBackgroundColor(Color.WHITE);
-        trajectoryView.setDragEnabled(true);
-        trajectoryView.getLegend().setEnabled(false);
-        trajectoryView.getDescription().setEnabled(false);
-        trajectoryView.setScaleEnabled(true);
-        trajectoryView.setTouchEnabled(true);
-        trajectoryView.setExtraOffsets(15f, 15f, 15f, 20f);
-
-        XAxis xAxis = trajectoryView.getXAxis();
-        xAxis.setPosition(XAxis.XAxisPosition.TOP);
-        xAxis.setDrawGridLines(true);
-        xAxis.setGridColor(Color.LTGRAY);
-
-        YAxis leftYAxis = trajectoryView.getAxisLeft();
-        leftYAxis.setDrawGridLines(true);
-        leftYAxis.setInverted(true);
-        leftYAxis.setGridColor(Color.LTGRAY);
-        YAxis rightYAxis = trajectoryView.getAxisRight();
-        rightYAxis.setEnabled(false);
-
-        ArrayList<Entry> entries_start = new ArrayList<>();
-        entries_start.add(new Entry(0, 0));
-
-        ArrayList<Entry> entries = new ArrayList<>();
-        entries.add(new Entry(0, 0));
-
-        LineDataSet dataSetStart = new LineDataSet(entries_start, "Start");
-        dataSetStart.setCircleColor(Color.parseColor("#03A9F4"));
-        dataSetStart.setDrawCircles(true);
-        dataSetStart.setCircleRadius(6);
-        dataSetStart.setDrawValues(false);
-        dataSetStart.setLineWidth(0);
-
-        LineDataSet dataSet = new LineDataSet(entries, "trajectory");
-        dataSet.setColor(Color.parseColor("#EEDC82"));
-        dataSet.setDrawCircles(false);
-        dataSet.setDrawValues(false);
-        dataSet.setLineWidth(4);
-
-        LineData lineData = new LineData(dataSetStart, dataSet);
-        trajectoryView.setData(lineData);
-    }
-
-    private void drawMap(List<double[]> pos) {
-        LineData lineData = trajectoryView.getLineData();
-        for (int i = 0; i < pos.size(); i++) {
-            double[] p = pos.get(i);
-            lineData.addEntry(new Entry((float) p[0], (float) p[1]), 1);
-        }
-        ArrayList<Entry> entries = new ArrayList<>();
-        entries.add(new Entry((float) pos.get(pos.size() - 1)[0], (float) pos.get(pos.size() - 1)[1]));
-        LineDataSet dataSetStop = new LineDataSet(entries, "Stop");
-        dataSetStop.setCircleColor(Color.parseColor("#EC4F44"));
-        dataSetStop.setDrawCircles(true);
-        dataSetStop.setCircleRadius(6);
-        dataSetStop.setDrawValues(false);
-        dataSetStop.setLineWidth(0);
-        lineData.addDataSet(dataSetStop);
-        lineData.notifyDataChanged();
-        trajectoryView.notifyDataSetChanged();
-        trajectoryView.invalidate();
-    }
-    private void saveChartAsImage(LineChart chart) {
-        // 保存图表为图片
-        chart.saveToGallery("chart", 600); // 文件名为 "chart"，质量为 100
-        Toast.makeText(this, "Chart saved as image", Toast.LENGTH_SHORT).show();
-    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -170,29 +109,8 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
         dataCollectView = findViewById(R.id.data_collect_view);
         trajectoryView = findViewById(R.id.trajectoryView);
-        trajectoryView.setOnChartGestureListener(new OnChartGestureListener() {
-            @Override
-            public void onChartLongPressed(MotionEvent me) {
-                // 弹出确认对话框
-                showConfirmationDialog();
-            }
-
-            // 其余方法保持空白
-            @Override
-            public void onChartGestureStart(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {}
-            @Override
-            public void onChartGestureEnd(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {}
-            @Override
-            public void onChartDoubleTapped(MotionEvent me) {}
-            @Override
-            public void onChartSingleTapped(MotionEvent me) {}
-            @Override
-            public void onChartFling(MotionEvent me1, MotionEvent me2, float velocityX, float velocityY) {}
-            @Override
-            public void onChartScale(MotionEvent me, float scaleX, float scaleY) {}
-            @Override
-            public void onChartTranslate(MotionEvent me, float dX, float dY) {}
-        });
+        //mapInitial();
+        mapData=new MapData(trajectoryView);
         viewPager = findViewById(R.id.viewpager);
         ArrayList<View> view_array = new ArrayList<>();
         view_array.add(dataCollectView);
@@ -216,9 +134,18 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         processPDRButton.setOnClickListener(v -> processPDR(currentSessionFileName));
 
         expandButton = findViewById(R.id.expandButton);
+        saveButton = findViewById(R.id.save_pic_btn);
         Btn_container = findViewById(R.id.buttonsContainer);
         expandButton.setOnClickListener(v -> Btn_move());
-        mapInitial();
+        saveButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showConfirmationDialog();
+            }
+        });
+
+        dataPath = getIntent().getStringExtra("data_path");
+        coverPath = getIntent().getStringExtra("cover_path");
     }
 
     private void showConfirmationDialog() {

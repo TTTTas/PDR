@@ -10,6 +10,7 @@
     <color name="colorZ">#FF9800</color>
     <color name="colorYellow">#FADD4D</color>
     <color name="colorYellowDark">#FAC424</color>
+    <color name="colorPathPoint">#FDF447</color>
     <color name="gray">#5E919191</color>
     <!-- 如果需要，可以添加 colorSecondary -->
 </resources>
