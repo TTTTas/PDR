@@ -3,11 +3,13 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="colorPrimaryDark">#4489AA</color> <!-- 星空深蓝色 -->
-    <color name="colorPrimary">#D0449898</color> <!-- 星空更深的蓝色 -->
+    <color name="colorPrimary">#D04B7F8F</color> <!-- 星空更深的蓝色 -->
     <color name="colorSecondary">#3395DE</color>
     <color name="colorX">#03A9F4</color>
     <color name="colorY">#EC4F44</color>
     <color name="colorZ">#FF9800</color>
+    <color name="colorYellow">#FADD4D</color>
+    <color name="colorYellowDark">#FAC424</color>
     <color name="gray">#5E919191</color>
     <!-- 如果需要，可以添加 colorSecondary -->
 </resources>

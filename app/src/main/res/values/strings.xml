@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">My Application</string>
+    <string name="app_name">PDR_Demo</string>
     <string name="Start_btn">Start</string>
     <string name="Pause_btn">Pause</string>
     <string name="Stop_btn">Stop</string>
@@ -7,5 +7,6 @@
     <string name="PDR_btn" />
     <string name="viewpager" />
     <string name="Expand_btn" />
+    <string name="add_pro">add_project_btn</string>
 
 </resources>

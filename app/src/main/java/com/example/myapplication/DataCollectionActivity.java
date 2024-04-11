@@ -1,6 +1,7 @@
 package com.example.myapplication;
 
 import android.animation.ValueAnimator;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -8,12 +9,14 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.viewpager.widget.ViewPager;
@@ -24,6 +27,10 @@ import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.listener.ChartTouchListener;
+import com.github.mikephil.charting.listener.OnChartGestureListener;
+import com.github.mikephil.charting.utils.Utils;
+import com.github.mikephil.charting.listener.OnChartGestureListener;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -70,8 +77,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             Toast.makeText(this, "读取数据文件失败！", Toast.LENGTH_SHORT).show();
             return;
         }
-
-
         // 创建PDR处理器实例并处理数据
         PDRProcessor pdrProcessor = new PDRProcessor();
         List<double[]> trajectory = pdrProcessor.processSensorData(sensorDataLines);
@@ -79,7 +84,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             Toast.makeText(this, "解算成功！", Toast.LENGTH_SHORT).show();
             drawMap(trajectory);
         }
-
     }
 
     private void mapInitial() {
@@ -110,18 +114,19 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         entries.add(new Entry(0, 0));
 
         LineDataSet dataSetStart = new LineDataSet(entries_start, "Start");
-        dataSetStart.setColor(Color.parseColor("#EC4F44"));
-        dataSetStart.setDrawCircles(false);
+        dataSetStart.setCircleColor(Color.parseColor("#03A9F4"));
+        dataSetStart.setDrawCircles(true);
+        dataSetStart.setCircleRadius(6);
         dataSetStart.setDrawValues(false);
-        dataSetStart.setLineWidth(5);
+        dataSetStart.setLineWidth(0);
 
         LineDataSet dataSet = new LineDataSet(entries, "trajectory");
-        dataSet.setColor(Color.parseColor("#03A9F4"));
+        dataSet.setColor(Color.parseColor("#EEDC82"));
         dataSet.setDrawCircles(false);
         dataSet.setDrawValues(false);
         dataSet.setLineWidth(4);
 
-        LineData lineData = new LineData(dataSet, dataSetStart);
+        LineData lineData = new LineData(dataSetStart, dataSet);
         trajectoryView.setData(lineData);
     }
 
@@ -129,32 +134,26 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         LineData lineData = trajectoryView.getLineData();
         for (int i = 0; i < pos.size(); i++) {
             double[] p = pos.get(i);
-            lineData.addEntry(new Entry((float) p[0], (float) p[1]), 0);
+            lineData.addEntry(new Entry((float) p[0], (float) p[1]), 1);
         }
         ArrayList<Entry> entries = new ArrayList<>();
         entries.add(new Entry((float) pos.get(pos.size() - 1)[0], (float) pos.get(pos.size() - 1)[1]));
         LineDataSet dataSetStop = new LineDataSet(entries, "Stop");
-        dataSetStop.setColor(Color.parseColor("#FF9800"));
-        dataSetStop.setDrawCircles(false);
+        dataSetStop.setCircleColor(Color.parseColor("#EC4F44"));
+        dataSetStop.setDrawCircles(true);
+        dataSetStop.setCircleRadius(6);
         dataSetStop.setDrawValues(false);
-        dataSetStop.setLineWidth(5);
-        trajectoryView.getLineData().addDataSet(dataSetStop);
-
-        //float xMax=lineData.getXMax();
-        //float xMin = lineData.getXMin();
-        //float yMax=lineData.getYMax();
-        //float yMin = lineData.getYMin();
-        // float dx=xMax-xMin;
-        //float dy=yMax-yMin;
-        //trajectoryView.getXAxis().setAxisMaximum((float) (xMax+dx*0.2));
-        //trajectoryView.getXAxis().setAxisMinimum((float) (xMin-dx*0.2));
-        //trajectoryView.getAxisLeft().setAxisMaximum((float) (yMax+dy*0.2));
-        // trajectoryView.getAxisRight().setAxisMinimum((float) (yMin-dy*0.2));
+        dataSetStop.setLineWidth(0);
+        lineData.addDataSet(dataSetStop);
         lineData.notifyDataChanged();
         trajectoryView.notifyDataSetChanged();
         trajectoryView.invalidate();
     }
-
+    private void saveChartAsImage(LineChart chart) {
+        // 保存图表为图片
+        chart.saveToGallery("chart", 600); // 文件名为 "chart"，质量为 100
+        Toast.makeText(this, "Chart saved as image", Toast.LENGTH_SHORT).show();
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -164,7 +163,6 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         setSupportActionBar(toolbar);
 
         // 初始化UI组件
-
         ImageButton startButton = findViewById(R.id.StartButton);
         ImageButton pauseButton = findViewById(R.id.PauseButton);
         ImageButton stopButton = findViewById(R.id.StopButton);
@@ -172,11 +170,34 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
         dataCollectView = findViewById(R.id.data_collect_view);
         trajectoryView = findViewById(R.id.trajectoryView);
+        trajectoryView.setOnChartGestureListener(new OnChartGestureListener() {
+            @Override
+            public void onChartLongPressed(MotionEvent me) {
+                // 弹出确认对话框
+                showConfirmationDialog();
+            }
+
+            // 其余方法保持空白
+            @Override
+            public void onChartGestureStart(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {}
+            @Override
+            public void onChartGestureEnd(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {}
+            @Override
+            public void onChartDoubleTapped(MotionEvent me) {}
+            @Override
+            public void onChartSingleTapped(MotionEvent me) {}
+            @Override
+            public void onChartFling(MotionEvent me1, MotionEvent me2, float velocityX, float velocityY) {}
+            @Override
+            public void onChartScale(MotionEvent me, float scaleX, float scaleY) {}
+            @Override
+            public void onChartTranslate(MotionEvent me, float dX, float dY) {}
+        });
         viewPager = findViewById(R.id.viewpager);
-        ArrayList<View> viewarray = new ArrayList<>();
-        viewarray.add(dataCollectView);
-        viewarray.add(trajectoryView);
-        MyPagerAdapter adapter = new MyPagerAdapter(viewarray);
+        ArrayList<View> view_array = new ArrayList<>();
+        view_array.add(dataCollectView);
+        view_array.add(trajectoryView);
+        MyPagerAdapter adapter = new MyPagerAdapter(view_array);
         viewPager = findViewById(R.id.viewpager);
         viewPager.setAdapter(adapter);
 
@@ -200,6 +221,34 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         mapInitial();
     }
 
+    private void showConfirmationDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("保存");
+        builder.setMessage("确认保存？");
+        builder.setPositiveButton("保存", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // 用户点击确认按钮时保存图片
+                saveChartAsImage();
+            }
+        });
+        builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // 用户点击取消按钮时关闭对话框
+                dialog.dismiss();
+            }
+        });
+        builder.create().show();
+    }
+
+    private void saveChartAsImage() {
+        // 生成带时间戳的文件名
+        String fileName = "chart_" + System.currentTimeMillis();
+        // 保存图表为图片，质量设置为 600
+        trajectoryView.saveToGallery(fileName, 600);
+        Toast.makeText(this, "图片已保存", Toast.LENGTH_SHORT).show();
+    }
 
     private void startDataCollection() {
         if (!isCollectingData) {
@@ -297,9 +346,11 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         if (isExpanded) {
             // 向上移动 100dp
             animateLayout(Btn_container, -100);
+            expandButton.setImageResource(R.drawable.ic_expand_down);
         } else {
             // 向下移动 100dp
             animateLayout(Btn_container, 100);
+            expandButton.setImageResource(R.drawable.ic_expand_up);
         }
 
         // 切换状态
@@ -317,7 +368,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         // 创建一个 ValueAnimator 对象，用于执行动画
         ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
 
-        animator.setDuration(600); // 设置动画时长为 600 毫秒
+        animator.setDuration(300); // 设置动画时长为 600 毫秒
         animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
