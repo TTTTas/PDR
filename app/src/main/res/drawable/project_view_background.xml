@@ -9,7 +9,7 @@
                 android:right="1dp"
                 android:top="1dp" />
             <solid android:color="#30CCCCCC" />
-            <corners android:radius="20dp" />
+            <corners android:radius="10dp" />
         </shape>
     </item>
 
@@ -21,7 +21,7 @@
                 android:right="1dp"
                 android:top="1dp" />
             <solid android:color="#20CCCCCC" />
-            <corners android:radius="20dp" />
+            <corners android:radius="10dp" />
         </shape>
     </item>
 
@@ -33,7 +33,7 @@
                 android:right="1dp"
                 android:top="1dp" />
             <solid android:color="#10CCCCCC" />
-            <corners android:radius="20dp" />
+            <corners android:radius="10dp" />
         </shape>
     </item>
     <!-- 中心背景 -->
@@ -43,7 +43,7 @@
             android:useLevel="false">
             <!-- 实心 -->
             <solid android:color="#ffffff" />
-            <corners android:radius="20dp" />
+            <corners android:radius="10dp" />
             <stroke android:color="@color/gray" />
             <padding
                 android:left="1dp"

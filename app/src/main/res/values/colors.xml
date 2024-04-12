@@ -12,5 +12,6 @@
     <color name="colorYellowDark">#FAC424</color>
     <color name="colorPathPoint">#FDF447</color>
     <color name="gray">#5E919191</color>
+    <color name="grayDark">#777474</color>
     <!-- 如果需要，可以添加 colorSecondary -->
 </resources>

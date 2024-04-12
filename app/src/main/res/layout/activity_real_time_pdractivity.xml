@@ -58,12 +58,12 @@
             android:src="@drawable/ic_start_btn" />
 
         <ImageButton
-            android:id="@+id/PauseButton"
+            android:id="@+id/ResetButton"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_margin="8dp"
             android:background="@drawable/circle_button_background"
-            android:contentDescription="@string/Pause_btn"
+            android:contentDescription="@string/Reset_btn"
             android:padding="8dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_pause_btn" />

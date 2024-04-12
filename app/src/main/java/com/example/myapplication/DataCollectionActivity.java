@@ -1,16 +1,19 @@
 package com.example.myapplication;
 
 import android.animation.ValueAnimator;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
-import android.graphics.Color;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Environment;
-import android.view.GestureDetector;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -23,22 +26,17 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.viewpager.widget.ViewPager;
 
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.XAxis;
-import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.listener.ChartTouchListener;
-import com.github.mikephil.charting.listener.OnChartGestureListener;
-import com.github.mikephil.charting.utils.Utils;
-import com.github.mikephil.charting.listener.OnChartGestureListener;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.example.myapplication.Project_View;
 
 public class DataCollectionActivity extends AppCompatActivity implements SensorEventListener {
     private final StringBuilder sensorDataBuilder = new StringBuilder();
@@ -58,8 +56,33 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private MapData mapData;
     String dataPath;
     String coverPath;
-    private void processPDR(String filename) {
+    private boolean isStarted;
+    private boolean isStopped;
 
+    private void processPDR(String filename) {
+        List<double[]> trajectory = new ArrayList<>();
+        if(!isStarted)
+        {
+            trajectory=process_realtime_pdr();
+        }
+        else if(isStarted&&isStopped)
+        {
+            trajectory=process_file_pdr(filename);
+        }
+        else return;
+        if (trajectory.size() != 0) {
+            Toast.makeText(this, "解算成功！", Toast.LENGTH_SHORT).show();
+            //drawMap(trajectory);
+            mapData.add_data(trajectory);
+            mapData.invalid_map(trajectoryView);
+            file_invalid();
+        }
+        else {
+            Toast.makeText(this, "解算失败！", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private List<double[]> process_file_pdr(String filename) {
         List<String> sensorDataLines = new ArrayList<>();
         // 获取外部存储的公共文档目录
         File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), filename);
@@ -79,18 +102,15 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(this, "读取数据文件失败！", Toast.LENGTH_SHORT).show();
-            return;
+            return new ArrayList<>();
         }
         // 创建PDR处理器实例并处理数据
         PDRProcessor pdrProcessor = new PDRProcessor();
-        List<double[]> trajectory = pdrProcessor.processSensorData(sensorDataLines);
-        if (trajectory.size() != 0) {
-            Toast.makeText(this, "解算成功！", Toast.LENGTH_SHORT).show();
-            //drawMap(trajectory);
-            mapData.add_data(trajectory);
-            mapData.change_stop_flag();
-            mapData.invalid_map(trajectoryView);
-        }
+        return pdrProcessor.processSensorData(sensorDataLines);
+    }
+
+    private List<double[]> process_realtime_pdr(){
+        return new ArrayList<>();
     }
 
     @Override
@@ -98,19 +118,24 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_data_collection);
 
+        isStarted=false;
+        isStopped=false;
+        dataPath = getIntent().getStringExtra("data_path");
+        coverPath = getIntent().getStringExtra("cover_path");
+
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         // 初始化UI组件
         ImageButton startButton = findViewById(R.id.StartButton);
-        ImageButton pauseButton = findViewById(R.id.PauseButton);
+        ImageButton resetButton = findViewById(R.id.ResetButton);
         ImageButton stopButton = findViewById(R.id.StopButton);
         ImageButton settingButton = findViewById(R.id.SettingButton);
 
         dataCollectView = findViewById(R.id.data_collect_view);
         trajectoryView = findViewById(R.id.trajectoryView);
         //mapInitial();
-        mapData=new MapData(trajectoryView);
+        mapData=new MapData(this, dataPath, trajectoryView);
         viewPager = findViewById(R.id.viewpager);
         ArrayList<View> view_array = new ArrayList<>();
         view_array.add(dataCollectView);
@@ -128,7 +153,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         // 设置按钮监听器
         startButton.setOnClickListener(v -> startDataCollection());
         stopButton.setOnClickListener(v -> stopDataCollection());
-
+        resetButton.setOnClickListener(v-> reset());
         // 事后PDR按钮
         ImageButton processPDRButton = findViewById(R.id.processPDRButton);
         processPDRButton.setOnClickListener(v -> processPDR(currentSessionFileName));
@@ -144,8 +169,8 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             }
         });
 
-        dataPath = getIntent().getStringExtra("data_path");
-        coverPath = getIntent().getStringExtra("cover_path");
+        // 注册广播接收器
+        IntentFilter filter = new IntentFilter(Project_View.REFRESH_RESOURCE_ACTION);
     }
 
     private void showConfirmationDialog() {
@@ -178,6 +203,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     }
 
     private void startDataCollection() {
+        isStarted=true;
         if (!isCollectingData) {
             // 注册传感器监听器
             sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
@@ -191,7 +217,9 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     }
 
     private void stopDataCollection() {
+        isStopped=true;
         if (isCollectingData) {
+            isCollectingData=false;
             // 注销传感器监听器
             sensorManager.unregisterListener(this);
             // 将累积的数据写入文件
@@ -202,6 +230,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             initialTimestamp = 0;
             // 显示数据文件保存成功的消息提示
             Toast.makeText(this, "数据文件保存成功！", Toast.LENGTH_SHORT).show();
+            mapData.change_stop_flag();
         }
     }
 
@@ -228,6 +257,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
             dataCollectView.update(relativeTimestamp, event.values[0], event.values[1], event.values[2], event.sensor.getType(), dataString);
 
+            // 可以在这里传入数据，来实现实时PDR，
 
         }
     }
@@ -310,5 +340,48 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         // 启动动画
         animator.start();
     }
+
+    private void reset(){
+        isStarted=false;
+        isStopped=false;
+        isCollectingData=false;
+        mapData.reset(trajectoryView);
+        dataCollectView.reset();
+        file_invalid();
+    }
+
+    private void file_invalid()
+    {
+        mapData.save_file(dataPath);
+        saveChartPNG(trajectoryView);
+    }
+
+    private void saveChartPNG(LineChart chart) {
+        // 创建一个 Bitmap 对象，大小与图表相同
+        Bitmap bitmap = Bitmap.createBitmap(chart.getWidth(), chart.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        chart.draw(canvas);
+
+        // 将 Bitmap 保存为 PNG 格式的文件到应用的内部文件目录中
+        File directory = getFilesDir(); // 获取应用的内部文件目录
+        File file = new File(directory, coverPath);
+        try {
+            FileOutputStream outputStream = new FileOutputStream(file);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+            outputStream.flush();
+            outputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // 发送广播通知刷新资源文件
+        Intent intent = new Intent(Project_View.REFRESH_RESOURCE_ACTION);
+        sendBroadcast(intent);
+    }
+
 
 }

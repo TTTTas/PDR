@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">PDR_Demo</string>
     <string name="Start_btn">Start</string>
-    <string name="Pause_btn">Pause</string>
+    <string name="Reset_btn">Pause</string>
     <string name="Stop_btn">Stop</string>
     <string name="Setting_btn">Settings</string>
     <string name="PDR_btn" />

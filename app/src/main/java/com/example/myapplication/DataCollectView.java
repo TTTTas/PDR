@@ -44,6 +44,11 @@ public class DataCollectView extends LinearLayout {
         magnetometerData = findViewById(R.id.magnetometerData);
         collectionTimeTextView = findViewById(R.id.collectionTime);
 
+        initial();
+    }
+
+    private void initial()
+    {
         accel_x =new ArrayList<>();
         accel_x.add(new Entry(0,0));
         accel_y =new ArrayList<>();
@@ -66,50 +71,26 @@ public class DataCollectView extends LinearLayout {
         chartInitial();
     }
 
-
     private void chartInitial(){
         // Initialize each chart
         initializeLineChart(accel_chart);
         initializeLineChart(gyro_chart);
         initializeLineChart(magn_chart);
-        accel_chart.setScaleEnabled(true);
-        gyro_chart.setScaleEnabled(true);
-        magn_chart.setScaleEnabled(true);
-        accel_chart.getLegend().setForm(Legend.LegendForm.LINE);
-        gyro_chart.getLegend().setForm(Legend.LegendForm.LINE);
-        magn_chart.getLegend().setForm(Legend.LegendForm.LINE);
-        accel_chart.getLegend().setXEntrySpace(12);
-        gyro_chart.getLegend().setXEntrySpace(12);
-        magn_chart.getLegend().setXEntrySpace(12);
+    }
 
+    private static void initializeLineChart(@NonNull LineChart chart) {
+        chart.setScaleEnabled(true);
+        chart.getLegend().setForm(Legend.LegendForm.LINE);
+        chart.getLegend().setXEntrySpace(12);
         ArrayList<Entry> entries1 = new ArrayList<>();
         ArrayList<Entry> entries2 = new ArrayList<>();
         ArrayList<Entry> entries3 = new ArrayList<>();
-        ArrayList<Entry> entries4 = new ArrayList<>();
-        ArrayList<Entry> entries5 = new ArrayList<>();
-        ArrayList<Entry> entries6 = new ArrayList<>();
-        ArrayList<Entry> entries7 = new ArrayList<>();
-        ArrayList<Entry> entries8 = new ArrayList<>();
-        ArrayList<Entry> entries9 = new ArrayList<>();
         entries1.add(new Entry(0,0));
         entries2.add(new Entry(0,0));
         entries3.add(new Entry(0,0));
-        entries4.add(new Entry(0,0));
-        entries5.add(new Entry(0,0));
-        entries6.add(new Entry(0,0));
-        entries7.add(new Entry(0,0));
-        entries8.add(new Entry(0,0));
-        entries9.add(new Entry(0,0));
-
         LineDataSet dataSet1 = new LineDataSet(entries1, "X");
         LineDataSet dataSet2 = new LineDataSet(entries2, "Y");
         LineDataSet dataSet3 = new LineDataSet(entries3, "Z");
-        LineDataSet dataSet4 = new LineDataSet(entries4, "X");
-        LineDataSet dataSet5 = new LineDataSet(entries5, "Y");
-        LineDataSet dataSet6 = new LineDataSet(entries6, "Z");
-        LineDataSet dataSet7 = new LineDataSet(entries7, "X");
-        LineDataSet dataSet8 = new LineDataSet(entries8, "Y");
-        LineDataSet dataSet9 = new LineDataSet(entries9, "Z");
         dataSet1.setColor(Color.parseColor("#03A9F4"));
         dataSet2.setColor(Color.parseColor("#EC4F44"));
         dataSet3.setColor(Color.parseColor("#FF9800"));
@@ -119,36 +100,9 @@ public class DataCollectView extends LinearLayout {
         dataSet1.setDrawCircles(false);
         dataSet2.setDrawCircles(false);
         dataSet3.setDrawCircles(false);
-        dataSet4.setColor(Color.parseColor("#03A9F4"));
-        dataSet5.setColor(Color.parseColor("#EC4F44"));
-        dataSet6.setColor(Color.parseColor("#FF9800"));
-        dataSet4.setDrawValues(false);
-        dataSet5.setDrawValues(false);
-        dataSet6.setDrawValues(false);
-        dataSet4.setDrawCircles(false);
-        dataSet5.setDrawCircles(false);
-        dataSet6.setDrawCircles(false);
-        dataSet7.setColor(Color.parseColor("#03A9F4"));
-        dataSet8.setColor(Color.parseColor("#EC4F44"));
-        dataSet9.setColor(Color.parseColor("#FF9800"));
-        dataSet7.setDrawValues(false);
-        dataSet8.setDrawValues(false);
-        dataSet9.setDrawValues(false);
-        dataSet7.setDrawCircles(false);
-        dataSet8.setDrawCircles(false);
-        dataSet9.setDrawCircles(false);
-        LineData lineData1 = new LineData(dataSet1, dataSet2, dataSet3);
-        LineData lineData2 = new LineData(dataSet4, dataSet5, dataSet6);
-        LineData lineData3 = new LineData(dataSet7, dataSet8, dataSet9);
-        accel_chart.setData(lineData1);
-        accel_chart.invalidate();
-        gyro_chart.setData(lineData2);
-        gyro_chart.invalidate();
-        magn_chart.setData(lineData3);
-        magn_chart.invalidate();
-    }
+        LineData lineData = new LineData(dataSet1, dataSet2, dataSet3);
+        chart.setData(lineData);
 
-    private static void initializeLineChart(LineChart chart) {
         // Set background color
         chart.setBackgroundColor(Color.WHITE);
 
@@ -169,9 +123,10 @@ public class DataCollectView extends LinearLayout {
         leftYAxis.setGridColor(Color.LTGRAY);
         YAxis rightYAxis = chart.getAxisRight();
         rightYAxis.setEnabled(false); // Disable right Y axis
+        chart.invalidate();
     }
 
-    public static void updateChartData(ArrayList<Entry> x, ArrayList<Entry> y, ArrayList<Entry> z, LineChart chart) {
+    public static void updateChartData(ArrayList<Entry> x, ArrayList<Entry> y, ArrayList<Entry> z, @NonNull LineChart chart) {
         // Get the current LineData from the chart
         LineData lineData = chart.getLineData();
 
@@ -200,17 +155,10 @@ public class DataCollectView extends LinearLayout {
         }
     }
 
-    public void freshchart()
+    public void reset()
     {
-        updateChartData(accel_x, accel_y, accel_z, accel_chart);
-        accel_x.clear();accel_y.clear();accel_z.clear();
-        updateChartData(gyro_x, gyro_y, gyro_z, gyro_chart);
-        gyro_x.clear();gyro_y.clear();gyro_z.clear();
-        updateChartData(magn_x, magn_y, magn_z, magn_chart);
-        magn_x.clear();magn_y.clear();magn_z.clear();
+        initial();
     }
-
-
 
     public void update(float time, float x, float y, float z, int type, String dataString)
     {

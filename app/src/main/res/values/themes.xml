@@ -19,7 +19,7 @@
         <item name="android:textSize">23sp</item>
         <item name="colorOnSecondary">@color/white</item>
     </style>
-
+    
     <style name="Toolbar.TitleText" parent="TextAppearance.Widget.AppCompat.Toolbar.Title">
         <item name="android:textSize">25sp</item>
         <item name="android:textStyle">bold</item>

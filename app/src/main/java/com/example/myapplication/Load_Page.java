@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -75,17 +77,53 @@ public class Load_Page extends AppCompatActivity {
                 dialog.show();
             }
         });
+        openProject(search_proj());
     }
 
     private void createProject(String projectName) {
-        final Project_View projectView = new Project_View(Load_Page.this, projectName);
+        final Project_View projectView = new Project_View(Load_Page.this, projectName, true);
+        proj_init(projectView);
+        projectContainer.addView(projectView);
+
+    }
+
+    private void openProject(List<String> projects){
+        if (!projects.isEmpty()) {
+            for (String proj : projects) {
+                final Project_View projectView = new Project_View(Load_Page.this, proj, false);
+                proj_init(projectView);
+                projectContainer.addView(projectView);
+            }
+        }
+    }
+
+    private List<String> search_proj(){
+        File directory = getFilesDir();
+        File[] files = directory.listFiles();
+        List<String> projects=new ArrayList<String>();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isFile()) {
+                    String filename = file.getName();
+                    // 检查文件名是否满足条件
+                    if (filename.startsWith("Project_") && filename.endsWith(".txt")) {
+                        // 返回匹配的文件路径
+                        projects.add(filename);
+                    }
+                }
+            }
+        }
+        return projects;
+    }
+
+    private void proj_init(Project_View projectView){
         // 设置 LinearLayout.LayoutParams 来控制子视图的布局
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
         );
         // 设置子视图与其他视图的间距
-        params.setMargins(0, 0, 0, 10); // 例如，底部间距设置为 20 像素
+        params.setMargins(0, 0, 0, 5); // 例如，底部间距设置为 10 像素
 
         projectView.setLayoutParams(params);
 
@@ -110,9 +148,6 @@ public class Load_Page extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-
-        projectContainer.addView(projectView);
-
     }
 
     private void deleteProject(Project_View projectView, Context context) {
