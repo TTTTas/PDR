@@ -154,6 +154,13 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         startButton.setOnClickListener(v -> startDataCollection());
         stopButton.setOnClickListener(v -> stopDataCollection());
         resetButton.setOnClickListener(v-> reset());
+        settingButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Configure dialogFragment = new Configure();
+                dialogFragment.show(getSupportFragmentManager(), "configure_dialog");
+            }
+        });
         // 事后PDR按钮
         ImageButton processPDRButton = findViewById(R.id.processPDRButton);
         processPDRButton.setOnClickListener(v -> processPDR(currentSessionFileName));

@@ -114,8 +114,8 @@ public class MapData {
         LineDataSet dataSet = new LineDataSet(path_point, "trajectory");
         dataSet.setColor(Color.parseColor("#FDF447"));
         dataSet.setDrawCircles(true);
-        dataSet.setDrawCircleHole(false);
-        dataSet.setCircleColor(Color.parseColor("#EEDC82"));
+        dataSet.setDrawCircleHole(true);
+        dataSet.setCircleColor(Color.parseColor("#FDF447"));
         dataSetStart.setCircleRadius(5);
         dataSet.setDrawValues(false);
         dataSet.setLineWidth(4);
