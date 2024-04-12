@@ -17,11 +17,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication"
         tools:targetApi="31">
-        <activity
-            android:name=".RealTimePDRActivity"
-            android:exported="true">
-            <!-- Removed MAIN and LAUNCHER intent-filter -->
-        </activity>
+
         <activity
             android:name=".DataCollectionActivity"
             android:exported="true"
@@ -31,19 +27,14 @@
         </activity>
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/Theme.Menu">
             <!-- This is the only activity with MAIN and LAUNCHER intent-filter -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".Load_Page"
-            android:exported="true"
-            android:requestLegacyExternalStorage="true"
-            android:theme="@style/Theme.Menu"/>
-        <!-- Add other activities here without MAIN and LAUNCHER intent-filter -->
     </application>
 
 </manifest>
