@@ -91,6 +91,7 @@ public class MapData {
         }
         start_point.add(path_point.get(0));
         end_point.add(path_point.get(path_point.size()-1));
+        newpts=path_point.size();
         if(end_point.get(0)[0]!=0||end_point.get(0)[1]!=0)
         {
             is_stop=true;

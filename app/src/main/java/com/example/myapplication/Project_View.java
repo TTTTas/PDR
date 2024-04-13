@@ -132,8 +132,6 @@ public class Project_View extends AppCompatTextView {
         try {
             FileWriter writer = new FileWriter(file);
             writer.write("0,0\n");
-            writer.write("1,1\n");
-            writer.write("1,0\n");
             writer.flush();
             writer.close();
             Log.d("writePathPointsToFile", "Path points saved to " + file.getAbsolutePath());

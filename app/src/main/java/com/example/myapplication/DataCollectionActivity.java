@@ -128,7 +128,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         isRealTime=false;
         dataPath = getIntent().getStringExtra("data_path");
         coverPath = getIntent().getStringExtra("cover_path");
-        CfgInfo=new Configure();
+        CfgInfo=new Configure(this);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
