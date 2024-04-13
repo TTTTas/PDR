@@ -23,12 +23,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MapData {
-    private List<Entry> start_point;
-    private List<Entry> path_point;
-    private int new_pts;
-    private List<Entry> end_point;
+    private List<double[]> start_point;
+    private List<double[]> path_point;
+    private List<double[]> end_point;
+    private int newpts;
     private boolean is_stop;
-    private float x_Min,x_Max,y_Min,y_Max;
     private Context context;
 
     public MapData(Context context)
@@ -37,32 +36,15 @@ public class MapData {
         initial();
     }
 
-    public MapData(Context context, String path, LineChart map)
+    public MapData(Context context, String path, MapView map)
     {
         this.context=context;
         initial();
         load_file(path);
         InitialMap(map);
-        if(is_stop)
-        {
-            LineData lineData = map.getLineData();
-            end_point.clear();
-            end_point.add(path_point.get(path_point.size()-1));
-            LineDataSet dataSetStop = new LineDataSet(end_point, "Stop");
-            dataSetStop.setCircleColor(Color.parseColor("#EC4F44"));
-            dataSetStop.setDrawCircles(true);
-            dataSetStop.setDrawCircleHole(false);
-            dataSetStop.setCircleRadius(6);
-            dataSetStop.setDrawValues(false);
-            dataSetStop.setLineWidth(0);
-            lineData.addDataSet(dataSetStop);
-            lineData.notifyDataChanged();
-            map.notifyDataSetChanged();
-            map.invalidate();
-        }
     }
 
-    public MapData(Context context, LineChart map)
+    public MapData(Context context, MapView map)
     {
         this.context=context;
         initial();
@@ -70,61 +52,18 @@ public class MapData {
     }
 
     private void initial(){
-        start_point = new ArrayList<Entry>();
-        path_point = new ArrayList<Entry>();
-        end_point = new ArrayList<Entry>();
-        start_point.add(new Entry(0,0));
-        path_point.add(new Entry(0,0));
-        end_point.add(new Entry(0,0));
-        x_Min=0;
-        y_Min=0;
-        x_Max=0;
-        y_Max=0;
+        start_point = new ArrayList<double[]>();
+        path_point = new ArrayList<double[]>();
+        end_point = new ArrayList<double[]>();
+        start_point.add(new double[]{0,0});
+        path_point.add(new double[]{0,0});
+        end_point.add(new double[]{0,0});
+        newpts=0;
         is_stop=false;
     }
 
-    public void InitialMap(LineChart map){
-        map.setBackgroundColor(Color.WHITE);
-        map.setDragEnabled(true);
-        map.getLegend().setEnabled(false);
-        map.getDescription().setEnabled(false);
-        map.setScaleEnabled(true);
-        map.setTouchEnabled(true);
-
-        XAxis xAxis = map.getXAxis();
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM_INSIDE);
-        xAxis.setDrawGridLines(true);
-        xAxis.setGridColor(Color.LTGRAY);
-
-        YAxis leftYAxis = map.getAxisLeft();
-        leftYAxis.setDrawGridLines(true);
-        leftYAxis.setInverted(false);
-        leftYAxis.setGridColor(Color.LTGRAY);
-        YAxis rightYAxis = map.getAxisRight();
-        rightYAxis.setEnabled(false);
-
-        LineDataSet dataSetStart = new LineDataSet(start_point, "Start");
-        dataSetStart.setCircleColor(Color.parseColor("#03A9F4"));
-        dataSetStart.setDrawCircles(true);
-        dataSetStart.setCircleRadius(6);
-        dataSetStart.setDrawCircleHole(false);
-        dataSetStart.setDrawValues(false);
-        dataSetStart.setLineWidth(0);
-
-        LineDataSet dataSet = new LineDataSet(path_point, "trajectory");
-        dataSet.setColor(Color.parseColor("#FDF447"));
-        dataSet.setDrawCircles(true);
-        dataSet.setDrawCircleHole(true);
-        dataSet.setCircleColor(Color.parseColor("#FDF447"));
-        dataSetStart.setCircleRadius(5);
-        dataSet.setDrawValues(false);
-        dataSet.setLineWidth(4);
-
-        LineData lineData = new LineData(dataSet, dataSetStart);
-        map.setData(lineData);
-        lineData.notifyDataChanged();
-        map.notifyDataSetChanged();
-        map.invalidate();
+    public void InitialMap(MapView map){
+        map.addData(path_point,is_stop);
     }
 
 
@@ -142,7 +81,7 @@ public class MapData {
                 String[] parts = line.split(",");
                 float x = Float.parseFloat(parts[0]);
                 float y = Float.parseFloat(parts[1]);
-                path_point.add(new Entry(x, y));
+                path_point.add(new double[]{x,y});
             }
             reader.close();
             Log.d("readPathPointsFromFile", "Path points read from " + file.getAbsolutePath());
@@ -152,7 +91,7 @@ public class MapData {
         }
         start_point.add(path_point.get(0));
         end_point.add(path_point.get(path_point.size()-1));
-        if(end_point.get(0).getX()!=0&&end_point.get(0).getY()!=0)
+        if(end_point.get(0)[0]!=0||end_point.get(0)[1]!=0)
         {
             is_stop=true;
         }
@@ -169,9 +108,9 @@ public class MapData {
         File file = new File(directory, path);
         try {
             FileWriter writer = new FileWriter(file);
-            for (Entry entry : path_point) {
+            for (double[] pos : path_point) {
                 // 将每个 Entry 对象的 x 和 y 值写入文件，以逗号分隔
-                writer.write(entry.getX() + "," + entry.getY() + "\n");
+                writer.write(pos[0] + "," + pos[1] + "\n");
             }
             writer.flush();
             writer.close();
@@ -182,40 +121,33 @@ public class MapData {
         }
     }
 
-    public void load_map(@NonNull LineChart map)
+    public void load_map(@NonNull MapView map)
     {
-        map.getLineData().clearValues();
+        map.restart();
         InitialMap(map);
     }
-    public void reset(LineChart map)
+    public void reset(MapView map)
     {
         start_point.clear();
         path_point.clear();
         end_point.clear();
-        start_point.add(new Entry(0,0));
-        path_point.add(new Entry(0,0));
-        end_point.add(new Entry(0,0));
-        x_Min=0;
-        y_Min=0;
-        x_Max=0;
-        y_Max=0;
+        start_point.add(new double[]{0,0});
+        path_point.add(new double[]{0,0});
+        end_point.add(new double[]{0,0});
         is_stop=false;
-        load_map(map);
+        newpts=0;
+        map.restart();
     }
 
     public void add_data(@NonNull List<double[]> pos)
     {
-        new_pts=pos.size();
-        for(int i = 0;i<new_pts;i++)
+        newpts=pos.size();
+        for(int i = 0;i<newpts;i++)
         {
             double[] p = pos.get(i);
             float x=(float) p[0];
             float y=(float) p[1];
-            if(x_Max<x)x_Max=x;
-            if(x_Min>x)x_Min=x;
-            if(y_Max<y)y_Max=y;
-            if(y_Min>y)y_Min=y;
-            path_point.add(new Entry((float) p[0], (float) p[1]));
+            path_point.add(p);
         }
     }
 
@@ -224,30 +156,12 @@ public class MapData {
         is_stop=!is_stop;
     }
 
-    public void invalid_map(@NonNull LineChart map){
-        LineData lineData = map.getLineData();
-        if(is_stop)
-        {
-            end_point.clear();
-            end_point.add(path_point.get(path_point.size()-1));
-            LineDataSet dataSetStop = new LineDataSet(end_point, "Stop");
-            dataSetStop.setCircleColor(Color.parseColor("#EC4F44"));
-            dataSetStop.setDrawCircles(true);
-            dataSetStop.setDrawCircleHole(false);
-            dataSetStop.setCircleRadius(6);
-            dataSetStop.setDrawValues(false);
-            dataSetStop.setLineWidth(0);
-            lineData.addDataSet(dataSetStop);
-            is_stop=false;
+    public void invalid_map(@NonNull MapView map){
+        List<double[]> new_pos=new ArrayList<>();
+        for(int i=0;i<newpts;i++){
+            new_pos.add(path_point.get(path_point.size()-newpts+i));
         }
-        lineData.notifyDataChanged();
-        map.notifyDataSetChanged();
-        float dx=x_Max-x_Min;
-        float dy = y_Max-y_Min;
-        map.getXAxis().setAxisMinimum((float) (x_Min - dx*0.2));
-        map.getXAxis().setAxisMaximum((float) (x_Max + dx*0.2));
-        map.getAxisLeft().setAxisMinimum((float) (y_Min - dy*0.2));
-        map.getAxisLeft().setAxisMaximum((float) (y_Max + dy*0.2));
+        map.addData(new_pos,is_stop);
         map.invalidate();
     }
 }

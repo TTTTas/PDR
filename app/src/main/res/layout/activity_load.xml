@@ -43,7 +43,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top">
-    <androidx.appcompat.widget.Toolbar
+        <androidx.appcompat.widget.Toolbar
         android:id="@+id/pro_toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
@@ -51,9 +51,23 @@
         android:background="@color/colorPrimaryDark"
         app:title="工程目录"
         app:titleTextAppearance="@style/Toolbar.TitleText"
-        app:titleTextColor="@android:color/white"/>
+        app:titleTextColor="@android:color/white">
 
-    <androidx.core.widget.NestedScrollView
+            <ImageButton
+                android:id="@+id/lines"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_lines"
+                android:background="@android:color/transparent"
+                android:contentDescription="@string/Expand_btn"
+                android:scaleType="fitCenter"
+                android:layout_gravity="end"
+                android:layout_marginEnd="16dp"/>
+
+        </androidx.appcompat.widget.Toolbar>
+
+
+        <androidx.core.widget.NestedScrollView
         android:id="@+id/pro_scroll"
         android:layout_below="@id/pro_toolbar"
         android:layout_width="match_parent"

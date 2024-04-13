@@ -18,6 +18,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
@@ -73,6 +74,13 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         openProject(search_proj());
+        ImageButton lines=findViewById(R.id.lines);
+        lines.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
     }
 
     private void createProject(String projectName) {

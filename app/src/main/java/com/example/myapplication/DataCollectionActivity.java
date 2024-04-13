@@ -12,6 +12,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.View;
@@ -35,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.example.myapplication.Project_View;
 
@@ -47,7 +49,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private long initialTimestamp = 0;
     private long initialTimestampfile = 0;
     private String currentSessionFileName;
-    private LineChart trajectoryView;
+    private MapView trajectoryView;
     private ViewPager viewPager;
     private ImageButton expandButton;
     private ImageButton saveButton;
@@ -58,12 +60,15 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     String coverPath;
     private boolean isStarted;
     private boolean isStopped;
+    private boolean isRealTime;
+    private Configure CfgInfo;
+    private RealtimeProcessor realtimeProcessor;
 
     private void processPDR(String filename) {
         List<double[]> trajectory = new ArrayList<>();
         if(!isStarted)
         {
-            trajectory=process_realtime_pdr();
+            process_realtime_pdr();
         }
         else if(isStarted&&isStopped)
         {
@@ -109,8 +114,8 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         return pdrProcessor.processSensorData(sensorDataLines);
     }
 
-    private List<double[]> process_realtime_pdr(){
-        return new ArrayList<>();
+    private void process_realtime_pdr(){
+        isRealTime=true;
     }
 
     @Override
@@ -120,8 +125,10 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
         isStarted=false;
         isStopped=false;
+        isRealTime=false;
         dataPath = getIntent().getStringExtra("data_path");
         coverPath = getIntent().getStringExtra("cover_path");
+        CfgInfo=new Configure();
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -157,8 +164,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         settingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Configure dialogFragment = new Configure();
-                dialogFragment.show(getSupportFragmentManager(), "configure_dialog");
+                CfgInfo.show(getSupportFragmentManager(), "配置信息");
             }
         });
         // 事后PDR按钮
@@ -204,9 +210,24 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
     private void saveChartAsImage() {
         // 生成带时间戳的文件名
         String fileName = "chart_" + System.currentTimeMillis();
-        // 保存图表为图片，质量设置为 600
-        trajectoryView.saveToGallery(fileName, 600);
-        Toast.makeText(this, "图片已保存", Toast.LENGTH_SHORT).show();
+        // 获取外部存储的公共目录
+        File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        // 创建一个名为 "MyApp" 的子目录
+        File appDir = new File(storageDir, "MyApp");
+        if (!appDir.exists()) {
+            // 如果子目录不存在，则创建它
+            appDir.mkdirs();
+        }
+        // 创建图片文件
+        File file = new File(appDir, fileName);
+        // 调用 saveToImage() 函数保存图片
+        trajectoryView.saveToImage(file);
+        // 通知图库有新图片添加
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        mediaScanIntent.setData(Uri.fromFile(file));
+        sendBroadcast(mediaScanIntent);
+        // 提示用户图片保存成功
+        Toast.makeText(this, "图片已保存至相册", Toast.LENGTH_SHORT).show();
     }
 
     private void startDataCollection() {
@@ -238,6 +259,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             // 显示数据文件保存成功的消息提示
             Toast.makeText(this, "数据文件保存成功！", Toast.LENGTH_SHORT).show();
             mapData.change_stop_flag();
+            if(isRealTime) isRealTime=false;
         }
     }
 
@@ -265,7 +287,12 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             dataCollectView.update(relativeTimestamp, event.values[0], event.values[1], event.values[2], event.sensor.getType(), dataString);
 
             // 可以在这里传入数据，来实现实时PDR，
-
+            if(isRealTime){
+                List<double[]>trajectory =realtimeProcessor.processRealTime(event);
+                mapData.add_data(trajectory);
+                mapData.invalid_map(trajectoryView);
+                file_invalid();
+            }
         }
     }
 
@@ -363,23 +390,11 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         saveChartPNG(trajectoryView);
     }
 
-    private void saveChartPNG(LineChart chart) {
-        // 创建一个 Bitmap 对象，大小与图表相同
-        Bitmap bitmap = Bitmap.createBitmap(chart.getWidth(), chart.getHeight(), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        chart.draw(canvas);
-
+    private void saveChartPNG(MapView mapView) {
         // 将 Bitmap 保存为 PNG 格式的文件到应用的内部文件目录中
         File directory = getFilesDir(); // 获取应用的内部文件目录
         File file = new File(directory, coverPath);
-        try {
-            FileOutputStream outputStream = new FileOutputStream(file);
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
-            outputStream.flush();
-            outputStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        mapView.saveToImage(file);
     }
 
     @Override
