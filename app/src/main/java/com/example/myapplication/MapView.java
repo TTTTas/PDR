@@ -278,11 +278,12 @@ public class MapView extends View {
     public void addData(List<double[]> trajectory, boolean isEnd) {
         for (int i = 0; i < trajectory.size(); i++) {
             double[] p=trajectory.get(i);
-            xyList.add(new XY((float) p[0], (float) p[1]));
-            if (x_point_left > p[0]) x_point_left = (float) p[0];//最左的边x点
-            if (x_point_right < p[0]) x_point_right = (float) p[0];//最右边的x点
-            if (y_point_top > p[1]) y_point_top = (float) p[1];//最上边的y点
-            if (y_point_bottom < p[1]) y_point_bottom = (float) p[1];//最底边的y点
+            XY xy=new XY((float) -p[1], (float) -p[0]);
+            xyList.add(xy);
+            if (x_point_left > xy.x) x_point_left = xy.x;//最左的边x点
+            if (x_point_right < xy.x) x_point_right = xy.x;//最右边的x点
+            if (y_point_top > xy.y) y_point_top = xy.y;//最上边的y点
+            if (y_point_bottom < xy.y) y_point_bottom = xy.y;//最底边的y点
         }
         this.isEnd=isEnd;
         invalidate();
