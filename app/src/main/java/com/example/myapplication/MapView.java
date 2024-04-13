@@ -156,6 +156,8 @@ public class MapView extends View {
             return;//数据异常不在执行，否则下面while死循环
         }
 
+        scaleNumX = view_width/(x_point_right - x_point_left);//X轴默认值缩放倍数
+        scaleNumY = view_height/(y_point_bottom - y_point_top);//Y轴默认值缩放倍数
         while (path_width > (float) view_width) {
             scaleNumX -= 0.01f;
             path_width = (x_point_right - x_point_left) * scaleNumX;
@@ -172,6 +174,9 @@ public class MapView extends View {
             scaleNumY += 0.01f;
             path_height = (y_point_bottom - y_point_top) * scaleNumY;
         }
+
+        if(scaleNumX>scaleNumY)scaleNumX=scaleNumY;
+        else scaleNumY=scaleNumX;
         Log.i("view", "scaleNumX: " + scaleNumX + " **** scaleNumY: " + scaleNumY);
         Log.i("view", "view_width: " + view_width + " **** view_height: " + view_height);
         Log.i("view", "path_width: " + path_width + " **** path_height: " + path_height);
@@ -278,7 +283,7 @@ public class MapView extends View {
     public void addData(List<double[]> trajectory, boolean isEnd) {
         for (int i = 0; i < trajectory.size(); i++) {
             double[] p=trajectory.get(i);
-            XY xy=new XY((float) -p[1], (float) -p[0]);
+            XY xy=new XY((float) -p[1], (float) p[0]);
             xyList.add(xy);
             if (x_point_left > xy.x) x_point_left = xy.x;//最左的边x点
             if (x_point_right < xy.x) x_point_right = xy.x;//最右边的x点
