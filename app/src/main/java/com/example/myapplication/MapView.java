@@ -283,7 +283,7 @@ public class MapView extends View {
     public void addData(List<double[]> trajectory, boolean isEnd) {
         for (int i = 0; i < trajectory.size(); i++) {
             double[] p=trajectory.get(i);
-            XY xy=new XY((float) -p[1], (float) p[0]);
+            XY xy=new XY((float) p[1], (float) -p[0]);
             xyList.add(xy);
             if (x_point_left > xy.x) x_point_left = xy.x;//最左的边x点
             if (x_point_right < xy.x) x_point_right = xy.x;//最右边的x点
