@@ -69,22 +69,24 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         if(!isStarted)
         {
             process_realtime_pdr();
+            Toast.makeText(this, "开始实时解算！", Toast.LENGTH_SHORT).show();
         }
         else if(isStarted&&isStopped)
         {
             trajectory=process_file_pdr(filename);
+            if (trajectory.size() != 0) {
+                Toast.makeText(this, "解算成功！", Toast.LENGTH_SHORT).show();
+                //drawMap(trajectory);
+                mapData.add_data(trajectory);
+                mapData.invalid_map(trajectoryView);
+                file_invalid();
+            }
+            else {
+                Toast.makeText(this, "解算失败！", Toast.LENGTH_SHORT).show();
+            }
         }
         else return;
-        if (trajectory.size() != 0) {
-            Toast.makeText(this, "解算成功！", Toast.LENGTH_SHORT).show();
-            //drawMap(trajectory);
-            mapData.add_data(trajectory);
-            mapData.invalid_map(trajectoryView);
-            file_invalid();
-        }
-        else {
-            Toast.makeText(this, "解算失败！", Toast.LENGTH_SHORT).show();
-        }
+
     }
 
     private List<double[]> process_file_pdr(String filename) {
@@ -116,6 +118,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
     private void process_realtime_pdr(){
         isRealTime=true;
+        startDataCollection();
     }
 
     @Override
@@ -184,6 +187,8 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
         // 注册广播接收器
         IntentFilter filter = new IntentFilter(Project_View.REFRESH_RESOURCE_ACTION);
+
+        realtimeProcessor=new RealtimeProcessor();
     }
 
     private void showConfirmationDialog() {
@@ -259,7 +264,11 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             // 显示数据文件保存成功的消息提示
             Toast.makeText(this, "数据文件保存成功！", Toast.LENGTH_SHORT).show();
             mapData.change_stop_flag();
-            if(isRealTime) isRealTime=false;
+            if(isRealTime){
+                trajectoryView.addend();
+                file_invalid();
+                isRealTime=false;
+            }
         }
     }
 
@@ -289,9 +298,10 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             // 可以在这里传入数据，来实现实时PDR，
             if(isRealTime){
                 List<double[]>trajectory =realtimeProcessor.processRealTime(event);
-                mapData.add_data(trajectory);
-                mapData.invalid_map(trajectoryView);
-                file_invalid();
+                if(!trajectory.isEmpty()){
+                    mapData.add_data(trajectory);
+                    mapData.invalid_map(trajectoryView);
+                }
             }
         }
     }

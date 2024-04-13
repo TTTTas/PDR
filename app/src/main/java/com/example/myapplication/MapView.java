@@ -289,6 +289,11 @@ public class MapView extends View {
         invalidate();
     }
 
+    public void addend(){
+        isEnd=true;
+        invalidate();
+    }
+
 
     public static class XY {
         float x;

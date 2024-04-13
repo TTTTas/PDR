@@ -98,8 +98,7 @@ public class MapData {
         }
     }
 
-    public void save_file(String path)
-    {
+    public void save_file(String path) {
         if (path_point == null || path_point.isEmpty()) {
             Log.e("writePathPointsToFile", "Path points list is null or empty");
             return;
@@ -108,7 +107,7 @@ public class MapData {
         File directory = context.getFilesDir();
         File file = new File(directory, path);
         try {
-            FileWriter writer = new FileWriter(file);
+            FileWriter writer = new FileWriter(file, false);
             for (double[] pos : path_point) {
                 // 将每个 Entry 对象的 x 和 y 值写入文件，以逗号分隔
                 writer.write(pos[0] + "," + pos[1] + "\n");
