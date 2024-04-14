@@ -14,13 +14,22 @@ import java.util.List;
 public class PDRProcessor {
     private static final String TAG = "PDRData"; // 定义日志标记
 
+    private Configure CfgInfo;
+
+    public PDRProcessor(Configure config) {
+        this.CfgInfo = config;
+    }
+
     public static class HeadingData {
         public final double timestamp;
         public final float headingAngle;
-
-        public HeadingData(double timestamp, float headingAngle) {
+        public final float pitchAngle;
+        public final float rollAngle;
+        public HeadingData(double timestamp, float headingAngle,float pitchAngle,float rollAngle) {
             this.timestamp = timestamp;
             this.headingAngle = headingAngle;
+            this.pitchAngle = pitchAngle;
+            this.rollAngle = rollAngle;
         }
     }
 
@@ -88,7 +97,7 @@ public class PDRProcessor {
         List<HeadingData> headingDataList = calculateOrientationUsingGyroscope(syncedGyroscopeDatafiltered,syncedAccelerometerDatafiltered);
 
         // 调用步伐探测方法
-        List<Double> stepTimestamps = detectSteps(syncedAccelerometerDatafiltered, 9.8);
+        List<Double> stepTimestamps = detectSteps(syncedAccelerometerDatafiltered,headingDataList ,9.8);
 
         // 调用航迹推算方法
         List<double[]> trajectory = calculateTrajectory(stepTimestamps, headingDataList, syncedAccelerometerDatafiltered);
@@ -125,18 +134,36 @@ public class PDRProcessor {
             double headingAngle = findHeadingAngle(eulerAnglesData, stepTime);
 
             // 步长估计
-            double acc_norm=0;
-            for(SensorData data : syncedAccelerometerData){
-                if (data.timestamp<=stepTime){
-                    acc_norm=Math.sqrt(data.x*data.x+data.y*data.y+data.z*data.z);
-                }else{
+            double stepLength = 0;
+            double sf=(dT==0)?0:1/dT; // 步频
+            switch(CfgInfo.step_length_mode){
+                case 1:
+                    stepLength=0.3;
                     break;
-                }
-
-
+                case 2:
+                    double h=CfgInfo.height;
+                    double a=0.371;
+                    double b=0.227;
+                    double c=1;
+                    stepLength=c*(0.7+a*(h-1.75)+b*(sf-1.79)*h/1.75);
+                    break;
+                case 3:
+                    double acc_norm=0;
+                    for(SensorData data : syncedAccelerometerData){
+                        if (data.timestamp<=stepTime){
+                            acc_norm=Math.sqrt(data.x*data.x+data.y*data.y+data.z*data.z);
+                        }else{
+                            break;
+                        }
+                    }
+                    stepLength = 0.132*(acc_norm-9.8)+0.123*sf+0.225;
+                    break;
+                default:
+                    throw new IllegalArgumentException("未知的步长估计模式");
             }
-            double sf=(dT==0)?0:1/dT;
-            double stepLength = 0.132*(acc_norm-9.8)+0.123*sf+0.225;;
+
+
+
 
             // 更新位置
             double[] newPos = updatePosition(posX, posY, stepLength, headingAngle);
@@ -174,32 +201,50 @@ public class PDRProcessor {
 
     /***** 获取脚步发生历元的函数 *****/
     // 添加步伐探测方法
-    public List<Double> detectSteps(List<SensorData> syncedAccelerometerData, double threshold) {
+    public List<Double> detectSteps(List<SensorData> accelerometerData, List<HeadingData> headingDataList,double threshold) {
         List<Double> stepsDetected = new ArrayList<>();
-        double[] lastStepTime = {0, 0}; // 初始化为0
+        double lastStepTime = 0; // 初始化为0
+        int mode= CfgInfo.step_detect_mode; // 获取步伐探测模式
 
-        // 计算加速度模长
-        for (int i = 1; i < syncedAccelerometerData.size() - 1; i++) {
-            double accelMagnitude = Math.sqrt(
-                    Math.pow(syncedAccelerometerData.get(i).x, 2) +
-                            Math.pow(syncedAccelerometerData.get(i).y, 2) +
-                            Math.pow(syncedAccelerometerData.get(i).z, 2)
-            );
-
-            // 使用连续三个历元进行峰值探测
-            if (accelMagnitude > Math.max(accelMagnitude(syncedAccelerometerData.get(i - 1)),
-                    accelMagnitude(syncedAccelerometerData.get(i + 1))) &&
-                    accelMagnitude > threshold) {
-                double currentTime = syncedAccelerometerData.get(i).timestamp;
-                if (currentTime - lastStepTime[0] > 1) { // 检查时间间隔是否大于1秒
-                    stepsDetected.add(currentTime);
-                    lastStepTime[0] = lastStepTime[1];
-                    lastStepTime[1] = currentTime;
+        switch (mode) {
+            case 1:
+                // 使用加速度计模长法探测步伐
+                for (int i = 1; i < accelerometerData.size() - 1; i++) {
+                    double accelMagnitude = accelMagnitude(accelerometerData.get(i));
+                    // 使用连续三个历元进行峰值探测
+                    if (accelMagnitude > Math.max(accelMagnitude(accelerometerData.get(i - 1)),
+                            accelMagnitude(accelerometerData.get(i + 1))) && accelMagnitude > threshold) {
+                        double currentTime = accelerometerData.get(i).timestamp;
+                        if (currentTime - lastStepTime > 0.5) { // 检查时间间隔是否大于0.5秒
+                            stepsDetected.add(currentTime);
+                            lastStepTime = currentTime;
+                        }
+                    }
                 }
-            }
+                break;
+            case 2:
+                // 使用垂向加速度法探测步伐
+                for (int i = 0; i < accelerometerData.size(); i++) {
+                    SensorData accelData = accelerometerData.get(i);
+                    HeadingData eulerData = headingDataList.get(i);
+                    double verticalAccel = calculateVerticalAccel(accelData, eulerData);
+
+                    // 确认是否为步伐
+                    if (Math.abs(verticalAccel) > threshold) {
+                        double currentTime = accelData.timestamp;
+                        if (currentTime - lastStepTime > 0.5) { // 时间间隔大于0.5秒
+                            stepsDetected.add(currentTime);
+                            lastStepTime = currentTime; // 更新最近一次步伐时间戳
+                        }
+                    }
+                }
+                break;
+            default:
+                throw new IllegalArgumentException("未知的脚步探测模式");
         }
 
         return stepsDetected;
+
     }
 
     // 辅助方法：计算加速度模长
@@ -207,10 +252,20 @@ public class PDRProcessor {
         return Math.sqrt(Math.pow(data.x, 2) + Math.pow(data.y, 2) + Math.pow(data.z, 2));
     }
 
+    // 辅助方法：计算垂直加速度
+    private double calculateVerticalAccel(SensorData accelData, HeadingData eulerData) {
+
+        double VerticalAccel=-Math.sin(eulerData.pitchAngle) * accelData.x + Math.sin(eulerData.rollAngle)*Math.cos(eulerData.pitchAngle) * accelData.y + Math.cos(eulerData.pitchAngle) *Math.cos(eulerData.rollAngle)* accelData.z;
+
+        // 返回垂直方向的加速度
+        return VerticalAccel;
+    }
 
     /***** 获取航向角函数 *****/
     // 使用陀螺仪数据计算航向角
     private List<HeadingData> calculateOrientationUsingGyroscope(List<SensorData> syncedGyroscopeData,List<SensorData> syncedAccelerometerData) {
+
+        int mode = CfgInfo.yaw_update_mode;
 
         // 计算初始的水平姿态角
         float[] initialOrientation = calculateInitialOrientation(syncedAccelerometerData);
@@ -236,13 +291,30 @@ public class PDRProcessor {
             float[] accdata  = {(float) Accdata.x, (float) Accdata.y, (float) Accdata.z};
             gyrodata = ahrs(quaternion, gyrodata, accdata,eInt, (float) dT);
 
-            // 更新四元数
-            quaternion = updateQuaternionRK4(quaternion, gyrodata[0], gyrodata[1], gyrodata[2], (float) dT);
+            // 根据mode选择四元数更新方式
+            switch (mode) {
+                case 1: // 一阶龙格库塔
+                    quaternion = updateQuaternionRK1(quaternion, gyrodata[0], gyrodata[1], gyrodata[2], (float) dT);
+                    break;
+                case 2: // 二阶龙格库塔
+                    quaternion = updateQuaternionRK2(quaternion, gyrodata[0], gyrodata[1], gyrodata[2], (float) dT);
+                    break;
+                case 3: // 四阶龙格库塔
+                    quaternion = updateQuaternionRK4(quaternion, gyrodata[0], gyrodata[1], gyrodata[2], (float) dT);
+                    break;
+                default:
+                    Log.e(TAG, "未知的四元数更新模式");
+                    return null;
+            }
 
             // 计算航向角
             float headingAngle = calculateHeadingAngle(quaternion);
+            // 计算俯仰角
+            float pitchAngle = calculatePitchAngle(quaternion);
+            // 计算横滚角
+            float rollAngle = calculateRollAngle(quaternion);
             // 创建航向数据对象并添加到列表中
-            headingDataList.add(new HeadingData(Gyrodata.timestamp, headingAngle));
+            headingDataList.add(new HeadingData(Gyrodata.timestamp, headingAngle,pitchAngle,rollAngle));
         }
         return headingDataList;
     }
@@ -363,9 +435,8 @@ public class PDRProcessor {
             double accZ = accData.z;
 
             // 计算roll和pitch值
-            float rollValue = (float) Math.atan2(-accX, -accZ);
-            float pitchValue = (float) Math.atan2(accX, Math.sqrt(accY * accY + accZ * accZ));
-
+            float rollValue = (float) Math.atan2(-accY, -accZ);
+            float pitchValue = (float) Math.atan2(accX, -accZ);
             // 将计算的值添加到列表中
             rollList.add(rollValue);
             pitchList.add(pitchValue);
@@ -384,6 +455,67 @@ public class PDRProcessor {
             sum += v;
         }
         return sum / values.size();
+    }
+    // 更新四元数的方法，使用一阶龙格-库塔方法（欧拉方法）
+    private float[] updateQuaternionRK1(float[] q, double gx, double gy, double gz, float dT) {
+        // 角速度为弧度/秒
+
+        // 计算角速度向量的一半
+        double halfGX = 0.5 * gx;
+        double halfGY = 0.5 * gy;
+        double halfGZ = 0.5 * gz;
+
+        // K1 是四元数的导数
+        float[] k1 = qDot(q, halfGX, halfGY, halfGZ);
+
+        // 计算四元数更新值
+        float[] qNew = new float[4];
+        for (int i = 0; i < 4; i++) {
+            qNew[i] = q[i] + k1[i] * dT;
+        }
+
+        // 四元数归一化
+        float norm = (float)Math.sqrt(qNew[0] * qNew[0] + qNew[1] * qNew[1] + qNew[2] * qNew[2] + qNew[3] * qNew[3]);
+        for (int i = 0; i < 4; i++) {
+            qNew[i] /= norm;
+        }
+
+        return qNew;
+    }
+    // 更新四元数的方法，使用二阶龙格-库塔方法
+    private float[] updateQuaternionRK2(float[] q, double gx, double gy, double gz, float dT) {
+        // 角速度为弧度/秒
+
+        // 计算角速度向量的一半
+        double halfGX = 0.5 * gx;
+        double halfGY = 0.5 * gy;
+        double halfGZ = 0.5 * gz;
+
+        // K1 是四元数的导数
+        float[] k1 = qDot(q, halfGX, halfGY, halfGZ);
+
+        // 计算中间值
+        float[] q2 = new float[4];
+        for (int i = 0; i < 4; i++) {
+            q2[i] = q[i] + k1[i] * (dT / 2);
+        }
+
+        // K2 是中间值的导数
+        float[] k2 = qDot(q2, halfGX, halfGY, halfGZ);
+
+        // 综合 K1 和 K2 来得到最终的四元数更新值
+        float[] qNew = new float[4];
+        for (int i = 0; i < 4; i++) {
+            qNew[i] = q[i] + (dT / 2) * (k1[i] + k2[i]);
+        }
+
+        // 四元数归一化
+        float norm = (float)Math.sqrt(qNew[0] * qNew[0] + qNew[1] * qNew[1] + qNew[2] * qNew[2] + qNew[3] * qNew[3]);
+        for (int i = 0; i < 4; i++) {
+            qNew[i] /= norm;
+        }
+
+        return qNew;
     }
     // 更新四元数的方法，使用四阶龙格-库塔方法
     private float[] updateQuaternionRK4(float[] q, double gx, double gy, double gz, float dT) {
@@ -454,36 +586,34 @@ public class PDRProcessor {
         double q2=quaternion[2];
         double q3=quaternion[3];
 
-
         double yaw=Math.atan2(2*(q1*q2+q3*w),(1-2*(q2*q2+q3*q3)));
 
-        /*
-        // 微调四元数，使其适配安卓API
-        float[] adjustedQuaternion = new float[]{
-                quaternion[3], // w (实部)
-                quaternion[0], // x (虚部)
-                quaternion[1], // y (虚部)
-                quaternion[2]  // z (虚部)
-        };
-
-        // 使用调整后的四元数计算旋转矩阵
-        float[] rotationMatrix = new float[9];
-        float[] orientationAngles = new float[3];
-        SensorManager.getRotationMatrixFromVector(rotationMatrix, adjustedQuaternion);
-
-        // 获取方向
-        SensorManager.getOrientation(rotationMatrix, orientationAngles);
-        orientationAngles[0]= (float) Math.atan2(rotationMatrix[3],rotationMatrix[0]);
-
-
-        // 航向角是orientationAngles数组的第一个元素
-        return orientationAngles[0];
-
-         */
         return (float) yaw;
     }
+    // 计算俯仰角的方法
+    private float calculatePitchAngle(float[] quaternion) {
+        double w=quaternion[0];
+        double q1=quaternion[1];
+        double q2=quaternion[2];
+        double q3=quaternion[3];
 
+        double t1=-2*(q1*q3-w*q2);
+        double t2=Math.sqrt(4*(q2*q3+w*q1)*(q2*q3+w*q1)+(1-2*(q1*q1+q2*q2))*(1-2*(q1*q1+q2*q2)));
+        double pitch=Math.atan2(t1,t2);
 
+        return (float) pitch;
+    }
+    // 计算横滚角的方法
+    private float calculateRollAngle(float[] quaternion) {
+        double w=quaternion[0];
+        double q1=quaternion[1];
+        double q2=quaternion[2];
+        double q3=quaternion[3];
+
+        double roll=Math.atan2(2*(q2*q3+q1*w),(1-2*(q1*q1+q2*q2)));
+
+        return (float) roll;
+    }
 
     /***** 数据预处理--滤波降噪函数 *****/
     public List<SensorData> filterSensorData(List<SensorData> originalData, int windowSize) {
@@ -491,6 +621,143 @@ public class PDRProcessor {
             Log.w(TAG, "原始数据为空，或窗口大小无效。");
             return null;
         }
+
+        int mode = CfgInfo.filter_mode;
+        List<SensorData> filteredData = new ArrayList<>();
+
+        // 根据mode选择滤波方式
+        switch (mode) {
+            case 1: // 均值滤波
+                filteredData = meanFilter(originalData, windowSize);
+                break;
+            case 2: // 中值滤波
+                filteredData = medianFilter(originalData, windowSize);
+                break;
+            case 3: // 去掉最大值和最小值后求均值
+                filteredData = trimmedMeanFilter(originalData, windowSize);
+                break;
+            default:
+                Log.e(TAG, "未知的滤波模式");
+                return null;
+        }
+
+        return filteredData;
+    }
+
+    // 均值滤波
+    private List<SensorData> meanFilter(List<SensorData> data, int windowSize) {
+        List<SensorData> filteredData = new ArrayList<>();
+        int dataSize = data.size();
+
+        for (int i = 0; i < dataSize; i++) {
+            double sumX = 0, sumY = 0, sumZ = 0;
+            int count = 0;
+            int start = Math.max(i - windowSize, 0);
+            int end = Math.min(i + windowSize + 1, dataSize);
+
+            for (int j = start; j < end; j++) {
+                sumX += data.get(j).x;
+                sumY += data.get(j).y;
+                sumZ += data.get(j).z;
+                count++;
+            }
+
+            double avgX = sumX / count;
+            double avgY = sumY / count;
+            double avgZ = sumZ / count;
+
+            filteredData.add(new SensorData(data.get(i).sensorType, data.get(i).timestamp, avgX, avgY, avgZ));
+        }
+
+        return filteredData;
+    }
+
+    // 中值滤波
+    private List<SensorData> medianFilter(List<SensorData> data, int windowSize) {
+        List<SensorData> filteredData = new ArrayList<>();
+        int dataSize = data.size();
+
+        for (int i = 0; i < dataSize; i++) {
+            List<Double> windowX = new ArrayList<>();
+            List<Double> windowY = new ArrayList<>();
+            List<Double> windowZ = new ArrayList<>();
+            int start = Math.max(i - windowSize, 0);
+            int end = Math.min(i + windowSize + 1, dataSize);
+
+            for (int j = start; j < end; j++) {
+                windowX.add(data.get(j).x);
+                windowY.add(data.get(j).y);
+                windowZ.add(data.get(j).z);
+            }
+
+            double medianX = getMedian(windowX);
+            double medianY = getMedian(windowY);
+            double medianZ = getMedian(windowZ);
+
+            filteredData.add(new SensorData(data.get(i).sensorType, data.get(i).timestamp, medianX, medianY, medianZ));
+        }
+
+        return filteredData;
+    }
+
+    // 修剪均值滤波
+    private List<SensorData> trimmedMeanFilter(List<SensorData> data, int windowSize) {
+        List<SensorData> filteredData = new ArrayList<>();
+        int dataSize = data.size();
+
+        for (int i = 0; i < dataSize; i++) {
+            List<Double> windowX = new ArrayList<>();
+            List<Double> windowY = new ArrayList<>();
+            List<Double> windowZ = new ArrayList<>();
+            int start = Math.max(i - windowSize, 0);
+            int end = Math.min(i + windowSize + 1, dataSize);
+
+            for (int j = start; j < end; j++) {
+                windowX.add(data.get(j).x);
+                windowY.add(data.get(j).y);
+                windowZ.add(data.get(j).z);
+            }
+
+            double trimmedMeanX = getTrimmedMean(windowX);
+            double trimmedMeanY = getTrimmedMean(windowY);
+            double trimmedMeanZ = getTrimmedMean(windowZ);
+
+            filteredData.add(new SensorData(data.get(i).sensorType, data.get(i).timestamp, trimmedMeanX, trimmedMeanY, trimmedMeanZ));
+        }
+
+        return filteredData;
+    }
+
+    private double getMedian(List<Double> windowData) {
+        Collections.sort(windowData);
+        int middle = windowData.size() / 2;
+        if (windowData.size() % 2 == 1) {
+            return windowData.get(middle);
+        } else {
+            return (windowData.get(middle - 1) + windowData.get(middle)) / 2.0;
+        }
+    }
+
+    private double getTrimmedMean(List<Double> windowData) {
+        Collections.sort(windowData);
+        if (windowData.size() > 2) {
+            windowData.remove(windowData.size() - 1);
+            windowData.remove(0);
+        }
+        double sum = 0;
+        for (Double value : windowData) {
+            sum += value;
+        }
+        return sum / windowData.size();
+    }
+
+    /*public List<SensorData> filterSensorData(List<SensorData> originalData, int windowSize) {
+        if (originalData == null || originalData.isEmpty() || windowSize <= 0) {
+            Log.w(TAG, "原始数据为空，或窗口大小无效。");
+            return null;
+        }
+
+        int mode = CfgInfo.filter_mode;
 
         List<SensorData> filteredData = new ArrayList<>();
         int dataSize = originalData.size();
@@ -560,7 +827,7 @@ public class PDRProcessor {
 
         return filteredData;
     }
-
+*/
 
     /***** 数据预处理--时间同步函数 *****/
     public void synchronizeSensorData(List<SensorData> accelerometerData,

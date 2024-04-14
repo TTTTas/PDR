@@ -112,7 +112,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
             return new ArrayList<>();
         }
         // 创建PDR处理器实例并处理数据
-        PDRProcessor pdrProcessor = new PDRProcessor();
+        PDRProcessor pdrProcessor = new PDRProcessor(CfgInfo);
         return pdrProcessor.processSensorData(sensorDataLines);
     }
 
