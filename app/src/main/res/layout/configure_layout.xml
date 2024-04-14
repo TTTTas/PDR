@@ -44,8 +44,7 @@
             android:layout_height="24dp"
             android:layout_weight="1"
             android:text="去极值滤波"
-            android:textSize="12sp"
-            android:checked="true"/>
+            android:textSize="12sp"/>
     </RadioGroup>
 
     <!-- Q Update Section -->
@@ -85,7 +84,6 @@
             android:layout_width="0dp"
             android:layout_height="24dp"
             android:layout_weight="1"
-            android:checked="true"
             android:text="四阶龙格库塔"
             android:textSize="12sp"
             tools:ignore="TouchTargetSizeCheck" />
@@ -114,8 +112,7 @@
             android:layout_height="24dp"
             android:layout_weight="1"
             android:text="加速度计模长法"
-            android:textSize="12sp"
-            android:checked="true"/>
+            android:textSize="12sp"/>
 
         <RadioButton
             android:id="@+id/step_2"
@@ -166,8 +163,7 @@
             android:layout_height="24dp"
             android:layout_weight="1"
             android:text="速度步频模型"
-            android:textSize="12sp"
-            android:checked="true"/>
+            android:textSize="12sp"/>
 
     </RadioGroup>
     <TextView
@@ -184,7 +180,6 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="5dp"
         android:layout_marginEnd="5dp"
-        android:hint="1.65"
         android:textSize="12sp"
         android:autofillHints="" />
 

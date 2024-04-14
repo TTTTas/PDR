@@ -55,15 +55,33 @@ public class Configure extends DialogFragment {
         RadioGroup lengthRadios = contentView.findViewById(R.id.length_radios);
         EditText heightText=contentView.findViewById(R.id.height_edit_text);
 
-        RadioGroup.OnCheckedChangeListener radioGroupCheckedChangeListener = new RadioGroup.OnCheckedChangeListener() {
+        filterRadios.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
-                if(checkedId==R.id.filter_radios) handleFilterSelection(checkedId);
-                else if(checkedId==R.id.q_update_radios)handleQUpdateSelection(checkedId);
-                else if(checkedId==R.id.step_radios)handleStepSelection(checkedId);
-                else if(checkedId==R.id.length_radios)handleLengthSelection(checkedId);
+                handleFilterSelection(checkedId);
             }
-        };
+        });
+
+        qUpdateRadios.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                handleQUpdateSelection(checkedId);
+            }
+        });
+
+        stepRadios.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                handleStepSelection(checkedId);
+            }
+        });
+
+        lengthRadios.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                handleLengthSelection(checkedId);
+            }
+        });
 
         heightText.addTextChangedListener(new TextWatcher() {
             @Override
@@ -81,15 +99,22 @@ public class Configure extends DialogFragment {
             }
         });
 
+        invalid_configure(contentView);
 
         return dialog;
     }
 
 
     private void handleFilterSelection(int checkedId) {
-        if(checkedId==R.id.filter_1)filter_mode=1;
-        else if(checkedId==R.id.filter_2)filter_mode=2;
-        else if(checkedId==R.id.filter_2)filter_mode=3;
+        if(checkedId==R.id.filter_1) {
+            filter_mode=1;
+        }
+        else if(checkedId==R.id.filter_2){
+            filter_mode=2;
+        }
+        else if(checkedId==R.id.filter_3){
+            filter_mode=3;
+        }
     }
 
     private void handleStepSelection(int checkedId) {
@@ -107,5 +132,63 @@ public class Configure extends DialogFragment {
         if(checkedId==R.id.length_1)step_length_mode=1;
         else if(checkedId==R.id.length_2)step_length_mode=2;
         else if(checkedId==R.id.length_3)step_length_mode=3;
+    }
+
+    private void invalid_configure(View contentView){
+        RadioButton btn;
+        switch (filter_mode){
+            case 1:
+                btn=contentView.findViewById(R.id.filter_1);
+                btn.setChecked(true);
+                break;
+            case 2:
+                btn=contentView.findViewById(R.id.filter_2);
+                btn.setChecked(true);
+                break;
+            case 3:
+                btn=contentView.findViewById(R.id.filter_3);
+                btn.setChecked(true);
+                break;
+        }
+        switch (yaw_update_mode){
+            case 1:
+                btn=contentView.findViewById(R.id.q_update_1);
+                btn.setChecked(true);
+                break;
+            case 2:
+                btn=contentView.findViewById(R.id.q_update_2);
+                btn.setChecked(true);
+                break;
+            case 3:
+                btn=contentView.findViewById(R.id.q_update_3);
+                btn.setChecked(true);
+                break;
+        }
+        switch (step_detect_mode){
+            case 1:
+                btn=contentView.findViewById(R.id.step_1);
+                btn.setChecked(true);
+                break;
+            case 2:
+                btn=contentView.findViewById(R.id.step_2);
+                btn.setChecked(true);
+                break;
+        }
+        switch (step_length_mode){
+            case 1:
+                btn=contentView.findViewById(R.id.length_1);
+                btn.setChecked(true);
+                break;
+            case 2:
+                btn=contentView.findViewById(R.id.length_2);
+                btn.setChecked(true);
+                break;
+            case 3:
+                btn=contentView.findViewById(R.id.length_3);
+                btn.setChecked(true);
+                break;
+        }
+        EditText editText=contentView.findViewById(R.id.height_edit_text);
+        editText.setHint(Double.toString(height));
     }
 }
