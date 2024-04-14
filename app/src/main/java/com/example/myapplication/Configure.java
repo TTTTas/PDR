@@ -119,7 +119,7 @@ public class Configure extends DialogFragment {
 
     private void handleStepSelection(int checkedId) {
         if(checkedId==R.id.step_1)step_detect_mode=1;
-        else if(checkedId==R.id.step_2)filter_mode=2;
+        else if(checkedId==R.id.step_2)step_detect_mode=2;
     }
 
     private void handleQUpdateSelection(int checkedId) {
