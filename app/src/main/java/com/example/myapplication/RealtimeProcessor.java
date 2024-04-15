@@ -98,10 +98,10 @@ public class RealtimeProcessor {
     private void invalid_pos(List<double[]> pos){
         // 添加代码
         double step_length=detect_step_len();
-        double y=Pos[0]-step_length*Math.sin(Yaw);
-        double x=Pos[1]-step_length*Math.cos(Yaw);
+        double y=Pos[0]+step_length*Math.sin(Yaw);
+        double x=Pos[1]+step_length*Math.cos(Yaw);
         Log.d("Pos invalid","x: "+x+"    y: "+y);
-        pos.add(new double[]{-x,-y});
+        pos.add(new double[]{x,-y});
         Pos[0]=y;
         Pos[1]=x;
         isStep=false;
