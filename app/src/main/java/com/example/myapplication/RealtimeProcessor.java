@@ -16,19 +16,21 @@ public class RealtimeProcessor {
     private double Step_length;
     // 上一次更新坐标
     private double[] Pos;
-
     private int step=0;
-    private static final long MIN_STEP_INTERVAL = 150;
+    private static final long MIN_STEP_INTERVAL = 350;
     private static long lastStepTime = 0;
     private static long currenStepTime=0;
     private static long lastStepTimeDiff=0;
     private static long currentStepTimeDiff=0;
+
+
 
     public RealtimeProcessor(){
         Yaw=0.0;
         isStep = false;
         Step_length=0.75;
         Pos=new double[]{0,0};
+
     }
 
     private void processGyro(SensorEvent event){
@@ -64,42 +66,50 @@ public class RealtimeProcessor {
     }
     private void processAccel(SensorEvent event){
         // 添加代码
-        double accelerationMagnitude = Math.sqrt(event.values[0]*event.values[0]+event.values[1]*event.values[1]);
+        double accelerationMagnitude = Math.sqrt(event.values[0]*event.values[0]+event.values[1]*event.values[1]+event.values[2]*event.values[2]);
 
-        if (accelerationMagnitude > 1.40) {
-            onNewStepDetected();
+        if (accelerationMagnitude > 10.8)
+        {
+            onNewStepDetected(event);
+
         }
     }
     private double detect_step_len(){
-        double Sf=1.0f/(0.8f*currentStepTimeDiff+0.2f*lastStepTimeDiff);
-        return 0.8f+0.371f*(1.8f-1.6f)+0.227f*(Sf-1.79f)*1.8f/1.6f;
+        double Sf=1.0f/(currentStepTimeDiff*0.001);
+        return 0.7f+0.371f*(1.8f-1.6f)+0.227f*(Sf-1.79f)*1.8f/1.6f;
     }
-    public void onNewStepDetected() {
+    public void onNewStepDetected(SensorEvent event) {
         float distanceStep = 0.8f;
-        step++;
-        long currentTime = System.currentTimeMillis(); // 获取当前时间
-        long timeDifference = currentTime - lastStepTime; // 计算时间差，本次脚步间隔
+        currenStepTime = event.timestamp / 1000000; // 获取当前时间
+        if(lastStepTime<1e-6)
+            lastStepTime=currenStepTime;
+        long timeDifference = currenStepTime - lastStepTime; // 计算时间差，本次脚步间隔
         if (timeDifference >= MIN_STEP_INTERVAL) {
+            Log.d("时间差： " + timeDifference," 当前时间："+currenStepTime);
             isStep=true;
             step++;
-            lastStepTime = currentTime; // 更新上一步的时间
-            lastStepTimeDiff=timeDifference;  //成上一次脚步间隔
+            lastStepTime = currenStepTime; // 更新上一步的时间
+            currentStepTimeDiff=timeDifference;
         }
     }
+
+
 
     private void invalid_pos(List<double[]> pos){
         // 添加代码
         double step_length=detect_step_len();
-        double x=Pos[0]-step_length*Math.sin(Yaw);
-        double y=Pos[1]-step_length*Math.cos(Yaw);
+        double y=Pos[0]-step_length*Math.sin(Yaw);
+        double x=Pos[1]-step_length*Math.cos(Yaw);
         Log.d("Pos invalid","x: "+x+"    y: "+y);
-        pos.add(new double[]{x,y});
-        Pos[0]=x;
-        Pos[1]=y;
+        pos.add(new double[]{-x,-y});
+        Pos[0]=y;
+        Pos[1]=x;
+        isStep=false;
     }
 
     public List<double[]> processRealTime(SensorEvent event){
         List<double[]> pos=new ArrayList<>();
+        List<double[]> output=new ArrayList<>();
         switch (event.sensor.getType()){
             case Sensor.TYPE_ACCELEROMETER:
                 processAccel(event);break;
@@ -107,7 +117,16 @@ public class RealtimeProcessor {
                 processGyro(event);break;
             default:break;
         }
-        if(isStep)invalid_pos(pos);
+
+        if(isStep){
+            invalid_pos(pos);
+
+            Log.d("Step detected", " Yaw: " + Yaw*180/Math.PI +" 当前时间："+currenStepTime+
+                    " Step: " + step +
+                    " Position: [" + Pos[0] + ", " + Pos[1] + "]");
+        }
+
         return pos;
     }
+
 }
