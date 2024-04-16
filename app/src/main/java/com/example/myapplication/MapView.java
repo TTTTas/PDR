@@ -336,8 +336,10 @@ public class MapView extends View {
         } else {
             onePointY += 0 - xyList.get(0).y * scaleNumY;
         }
-        onePointX = (path_width + view_width) / 2 + move_x/sx;
-        onePointY = (path_height + view_height) / 2 + move_y/sy;
+        onePointX = -scaleNumX * (x_point_left+x_point_right)/(2f) + move_x + px;
+        onePointY = -scaleNumY * (y_point_bottom+y_point_top)/(2f) + move_y + py;
+        Log.d("move_x", String.valueOf(move_x));
+        Log.d("move_y", String.valueOf(move_y));
         Log.i("view", "onePointX: " + onePointX + ", onePointY: " + onePointY);
         Log.i("view", "xyList.get(0).x * scaleNumX: " + (xyList.get(0).x * scaleNumX) + ", xyList.get(0).y * scaleNumX: " + (xyList.get(0).y * scaleNumY));
         Log.i("view", "xyList.get(0).x: " + (xyList.get(0).x) + ", xyList.get(0).y: " + (xyList.get(0).y));
@@ -435,16 +437,21 @@ public class MapView extends View {
                 float labelWidth = text_paint.measureText(label);
                 canvas.drawText(label, -labelWidth - 20, x + 15/ sx, text_paint);
             }
+            canvas.drawText("0", -10/ sx, 40/ sx, text_paint);
         }
 
-        canvas.drawText("0", -10/ sx, 40/ sx, text_paint);
         //绘制开始圆点
         canvas.drawCircle(xyList.get(0).x * scaleNumX, xyList.get(0).y * scaleNumY, 1.0f, start_point_paint);
 
         //绘制起点文字
         canvas.drawText("起点", xyList.get(0).x * scaleNumX, xyList.get(0).y * scaleNumY, text_paint);
 
+        if(!isEnd){
+            end_point_paint.setColor(Color.parseColor("#4CAF50"));
+            canvas.drawCircle(xyList.get(xyList.size() - 1).x * scaleNumX, xyList.get(xyList.size() - 1).y * scaleNumY, 1.0f, end_point_paint);
+        }
         if(isEnd){
+            end_point_paint.setColor(Color.parseColor("#EC4F44"));
             //绘制结束圆点
             canvas.drawCircle(xyList.get(xyList.size() - 1).x * scaleNumX, xyList.get(xyList.size() - 1).y * scaleNumY, 1.0f, end_point_paint);
             //绘制终点文字

@@ -13,5 +13,6 @@
     <color name="colorPathPoint">#FDF447</color>
     <color name="gray">#D2CFCF</color>
     <color name="grayDark">#B9B6B6</color>
+    <color name="green">#4CAF50</color>
     <!-- 如果需要，可以添加 colorSecondary -->
 </resources>
