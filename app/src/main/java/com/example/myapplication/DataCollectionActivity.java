@@ -214,7 +214,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
 
     private void saveChartAsImage() {
         // 生成带时间戳的文件名
-        String fileName = "chart_" + System.currentTimeMillis();
+        String fileName = "chart_" + System.currentTimeMillis()+".png";
         // 获取外部存储的公共目录
         File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
         // 创建一个名为 "MyApp" 的子目录
@@ -391,6 +391,7 @@ public class DataCollectionActivity extends AppCompatActivity implements SensorE
         isCollectingData=false;
         mapData.reset(trajectoryView);
         dataCollectView.reset();
+        realtimeProcessor.reset();
         file_invalid();
     }
 

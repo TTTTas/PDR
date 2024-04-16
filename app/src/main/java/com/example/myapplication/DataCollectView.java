@@ -49,6 +49,14 @@ public class DataCollectView extends LinearLayout {
 
     private void initial()
     {
+        TextView time_text=findViewById(R.id.collectionTime);
+        time_text.setText("已采集时间: 0秒");
+        TextView accel_text=findViewById(R.id.accelerometerData);
+        accel_text.setText("加速度计数据：");
+        TextView gyro_text=findViewById(R.id.gyroscopeData);
+        gyro_text.setText("陀螺仪数据：");
+        TextView magn_text=findViewById(R.id.magnetometerData);
+        magn_text.setText("磁力计数据：");
         accel_x =new ArrayList<>();
         accel_x.add(new Entry(0,0));
         accel_y =new ArrayList<>();

@@ -4,10 +4,14 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
 
 import androidx.annotation.Nullable;
@@ -17,14 +21,20 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.text.DecimalFormat;
 
 public class MapView extends View {
 
     private Paint start_point_paint;//开始圆点
     private Paint end_point_paint;//结束圆点
     private Paint line_paint;//线
+    private Paint xaxis_paint;//坐标轴
+    private Paint yaxis_paint;//坐标轴
     private Paint text_paint;//文字
+    private Paint dashedLinePaint;//网格
     private Path path;//轨迹
+    private Path xAxis;
+    private Path yAxis;
     private final List<XY> xyList = new ArrayList<>();//绘制点集合
 
     private int view_width;//view的宽
@@ -36,6 +46,61 @@ public class MapView extends View {
     private float y_point_bottom = 0;//轨迹最底（南）边的Y点
 
     private boolean isEnd;
+
+    private float scale=1f;
+    private float move_x=0;
+    private float move_y=0;
+    private ScaleGestureDetector scaleGestureDetector;
+    private float lastX, lastY;
+    private boolean isDragging = false;
+
+
+    // 内部类，用于监听放缩手势
+    private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
+        @Override
+        public boolean onScale(ScaleGestureDetector detector) {
+            float scaleFactor = detector.getScaleFactor();
+            scale *= scaleFactor;
+            invalidate(); // 重新绘制
+            return true;
+        }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        // 将触摸事件传递给ScaleGestureDetector
+        scaleGestureDetector.onTouchEvent(event);
+        float x = event.getX();
+        float y = event.getY();
+
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                lastX = x;
+                lastY = y;
+                isDragging = true;
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (isDragging) {
+                    float deltaX = x - lastX;
+                    float deltaY = y - lastY;
+                    move_x += deltaX;
+                    move_y += deltaY;
+                    lastX = x;
+                    lastY = y;
+                    invalidate(); // 重新绘制
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                isDragging = false;
+                break;
+            case MotionEvent.ACTION_CANCEL:
+                isDragging = false;
+                break;
+        }
+
+        return true;
+    }
+
 
     public MapView(Context context) {
         this(context, null);
@@ -56,16 +121,20 @@ public class MapView extends View {
 
     private void init() {
         start_point_paint = new Paint();
-
         end_point_paint = new Paint();
-
         line_paint = new Paint();
+        xaxis_paint=new Paint();
+        yaxis_paint=new Paint();
+        dashedLinePaint = new Paint();
 
         text_paint = new Paint();
 
         path = new Path();
-
+        xAxis=new Path();
+        yAxis=new Path();
         isEnd=false;
+
+        scaleGestureDetector = new ScaleGestureDetector(getContext(), new ScaleListener());
     }
 
     //绘制前重置一下避免一致绘制缓存过大出现卡顿现象
@@ -75,30 +144,51 @@ public class MapView extends View {
         start_point_paint.setDither(true);
         start_point_paint.setStyle(Paint.Style.FILL_AND_STROKE);
         start_point_paint.setColor(Color.parseColor("#03A9F4"));
-        start_point_paint.setStrokeWidth(25.0f);
+        start_point_paint.setStrokeWidth(35.0f);
 
         end_point_paint.reset();
         end_point_paint.setAntiAlias(true);
         end_point_paint.setDither(true);
         end_point_paint.setStyle(Paint.Style.FILL_AND_STROKE);
         end_point_paint.setColor(Color.parseColor("#EC4F44"));
-        end_point_paint.setStrokeWidth(25.0f);
+        end_point_paint.setStrokeWidth(35.0f);
 
         line_paint.reset();
         line_paint.setAntiAlias(true);
         line_paint.setDither(true);
         line_paint.setStyle(Paint.Style.STROKE);
         line_paint.setColor(Color.parseColor("#FDF447"));
-        line_paint.setStrokeWidth(15.0f);
+        line_paint.setStrokeWidth(25.0f);
         line_paint.setStrokeJoin(Paint.Join.ROUND);//设置线段连接处为圆角
+
+        xaxis_paint.reset();
+        xaxis_paint.setAntiAlias(true);
+        xaxis_paint.setDither(true);
+        xaxis_paint.setStyle(Paint.Style.STROKE);
+        xaxis_paint.setColor(Color.parseColor("#B9B6B6"));
+        xaxis_paint.setStrokeWidth(10.0f);
+
+        yaxis_paint.reset();
+        yaxis_paint.setAntiAlias(true);
+        yaxis_paint.setDither(true);
+        yaxis_paint.setStyle(Paint.Style.STROKE);
+        yaxis_paint.setColor(Color.parseColor("#B9B6B6"));
+        yaxis_paint.setStrokeWidth(10.0f);
 
         text_paint.reset();
         text_paint.setAntiAlias(true);
         text_paint.setDither(true);
         text_paint.setColor(Color.BLACK);
-        text_paint.setTextSize(30.0f);
+        text_paint.setTextSize(40.0f);
+
+        dashedLinePaint.setColor(Color.GRAY);
+        dashedLinePaint.setStrokeWidth(1);
+        dashedLinePaint.setStyle(Paint.Style.STROKE);
+        dashedLinePaint.setPathEffect(new DashPathEffect(new float[]{5, 10}, 0));
 
         path.reset();
+        xAxis.reset();
+        yAxis.reset();
     }
 
     @Override
@@ -156,8 +246,8 @@ public class MapView extends View {
             return;//数据异常不在执行，否则下面while死循环
         }
 
-        scaleNumX = view_width/(x_point_right - x_point_left);//X轴默认值缩放倍数
-        scaleNumY = view_height/(y_point_bottom - y_point_top);//Y轴默认值缩放倍数
+        scaleNumX = view_width / (x_point_right - x_point_left);//X轴默认值缩放倍数
+        scaleNumY = view_height / (y_point_bottom - y_point_top);//Y轴默认值缩放倍数
         while (path_width > (float) view_width) {
             scaleNumX -= 0.01f;
             path_width = (x_point_right - x_point_left) * scaleNumX;
@@ -175,24 +265,22 @@ public class MapView extends View {
             path_height = (y_point_bottom - y_point_top) * scaleNumY;
         }
 
-        if(scaleNumX>scaleNumY)scaleNumX=scaleNumY;
-        else scaleNumY=scaleNumX;
+        if (scaleNumX > scaleNumY) scaleNumX = scaleNumY;
+        else scaleNumY = scaleNumX;
+        path_width = (x_point_right - x_point_left) * scaleNumX;
+        path_height = (y_point_bottom - y_point_top) * scaleNumY;
         Log.i("view", "scaleNumX: " + scaleNumX + " **** scaleNumY: " + scaleNumY);
         Log.i("view", "view_width: " + view_width + " **** view_height: " + view_height);
         Log.i("view", "path_width: " + path_width + " **** path_height: " + path_height);
 //		Log.d("view", "view_width / 2 = " + view_width / 2 + " **** view_height / 2 = " + view_height / 2);
 //		Log.d("view", "path_width / 2 = " + path_width / 2 + " **** path_height / 2 = " + path_height / 2);
 
-//		///////////缩放后可绘制的区域///////////
-//		RectF rectF = new RectF(0,0, path_width, path_height);
-//		//绘制上述矩形区域
-//		canvas.drawRect(rectF, line_paint);
-//		/////////////////////////////////////
 
         float left = x_point_left * scaleNumX;//缩放倍数后的最左边点
         float right = x_point_right * scaleNumX;//...最右边点
         float top = y_point_top * scaleNumY;//...最顶边点
         float bottom = y_point_bottom * scaleNumY;//...最底边点
+
         Log.d("view", "left: " + left);
         Log.d("view", "right: " + right);
         Log.d("view", "top: " + top);
@@ -200,13 +288,19 @@ public class MapView extends View {
 
         /****************** 计算整个path图形居中显示，开始点X，Y轴需要缩放、平移的位置 start *****************/
         //缩小比例使开始和结束点不挨着边界
-        float sx = 0.7f;//X等比缩小30%
-        float sy = 0.7f;//Y等比缩小30%
+        float sx = 0.7f * scale;//X等比缩小30%
+        float sy = 0.7f * scale;//Y等比缩小30%
         float px = view_width / 2f;
         float py = view_height / 2f;
         Log.d("view", "px: " + px + ", py: " + py);
         //缩小canvas
         canvas.scale(sx, sy, px, py);
+
+//		///////////缩放后可绘制的区域///////////
+//      RectF rectF = new RectF(0,0, path_width, path_height);
+//		//绘制上述矩形区域
+//		canvas.drawRect(rectF, line_paint);
+//		/////////////////////////////////////
 
         //计算开始点需要平移的位置
         float onePointX = 0;//平移的第一个X点
@@ -242,6 +336,8 @@ public class MapView extends View {
         } else {
             onePointY += 0 - xyList.get(0).y * scaleNumY;
         }
+        onePointX = (path_width + view_width) / 2 + move_x/sx;
+        onePointY = (path_height + view_height) / 2 + move_y/sy;
         Log.i("view", "onePointX: " + onePointX + ", onePointY: " + onePointY);
         Log.i("view", "xyList.get(0).x * scaleNumX: " + (xyList.get(0).x * scaleNumX) + ", xyList.get(0).y * scaleNumX: " + (xyList.get(0).y * scaleNumY));
         Log.i("view", "xyList.get(0).x: " + (xyList.get(0).x) + ", xyList.get(0).y: " + (xyList.get(0).y));
@@ -260,6 +356,88 @@ public class MapView extends View {
         //绘制轨迹
         canvas.drawPath(path, line_paint);
 
+        if(isEnd){
+            // 绘制坐标轴
+            int left_num = 0;
+            int right_num = 0;
+            int top_num = 0;
+            int bottom_num = 0;
+            float x_axis_left = -((1 - sx) * px + onePointX * sx) / sx;
+            float x_axis_right = (view_width - ((1 - sx) * px + onePointX * sx)) / sx;
+            float y_axis_top = -((1 - sy) * py + onePointY * sy) / sy;
+            float y_axis_bottom = (view_height - ((1 - sy) * py + onePointY * sy)) / sy;
+            double x_interval = findClosestNumber((x_axis_right - x_axis_left) / (12.0f * scaleNumX * sx));
+            double y_interval = findClosestNumber((y_axis_bottom - y_axis_top) / (16.0f * scaleNumY * sy));
+            while ((x_axis_right - x_axis_left)/(x_interval*scaleNumX*sx)<10)x_interval/=2;
+            while ((x_axis_right - x_axis_left)/(x_interval*scaleNumX*sx)>25)x_interval*=2;
+            while ((y_axis_bottom - y_axis_top)/(y_interval*scaleNumY*sy)<10)y_interval/=2;
+            while ((y_axis_bottom - y_axis_top)/(y_interval*scaleNumY*sy)>25)y_interval*=2;
+            Log.d("x_interval", String.valueOf(x_interval));
+            Log.d("x_num", String.valueOf((x_axis_right - x_axis_left)/(x_interval*scaleNumX*sx)));
+            Log.d("y_interval", String.valueOf(y_interval));
+            Log.d("y_num", String.valueOf((y_axis_bottom - y_axis_top)/(y_interval*scaleNumY*sy)));
+            // 绘制X轴
+            canvas.drawLine(x_axis_left, 0, x_axis_right, 0, xaxis_paint);
+            xAxis.moveTo(x_axis_right-5/sx,0);
+            xAxis.lineTo(x_axis_right-30/sx, 20/sx);
+            xAxis.moveTo(x_axis_right-5/sx,0);
+            xAxis.lineTo(x_axis_right-30/sx, -20/sx);
+            canvas.drawPath(xAxis, xaxis_paint);
+            // 绘制Y轴
+            canvas.drawLine(0, y_axis_top, 0, y_axis_bottom, yaxis_paint);
+            yAxis.moveTo(0, y_axis_top+5/sx);
+            yAxis.lineTo(20/sx, y_axis_top+30/sx);
+            yAxis.moveTo(0, y_axis_top+5/sx);
+            yAxis.lineTo(-20/sx, y_axis_top+30/sx);
+            canvas.drawPath(yAxis, yaxis_paint);
+            float x = 0;
+            for (left_num = 1; -left_num * x_interval * sx * scaleNumX > x_axis_left; left_num++) {
+                x = -(float) (left_num * x_interval * scaleNumX);
+                canvas.drawLine(x, 0, x, -20 / sx, xaxis_paint);
+                canvas.drawLine(x, y_axis_top, x, y_axis_bottom, dashedLinePaint);
+                // 绘制文字标签
+                DecimalFormat decimalFormat = new DecimalFormat("#.##");
+                // 格式化数字，并转换为字符串
+                String label = decimalFormat.format(-left_num * x_interval);
+                float labelWidth = text_paint.measureText(label);
+                canvas.drawText(label, x - labelWidth / 2, 40/ sx, text_paint);
+            }
+            for (right_num = 1; right_num * x_interval * sx * scaleNumX < x_axis_right; right_num++) {
+                x = (float) (right_num * x_interval * scaleNumX);
+                canvas.drawLine(x, 0, x, -20 / sx, xaxis_paint);
+                canvas.drawLine(x, y_axis_top, x, y_axis_bottom, dashedLinePaint);
+                // 绘制文字标签
+                DecimalFormat decimalFormat = new DecimalFormat("#.##");
+                // 格式化数字，并转换为字符串
+                String label = decimalFormat.format(right_num * x_interval);
+                float labelWidth = text_paint.measureText(label);
+                canvas.drawText(label, x - labelWidth / 2, 40/ sx, text_paint);
+            }
+            for (top_num = 1; -top_num * y_interval * sx * scaleNumY > y_axis_top; top_num++) {
+                x = -(float) (top_num * y_interval * scaleNumY);
+                canvas.drawLine(0, x, 20 / sx, x, xaxis_paint);
+                canvas.drawLine(x_axis_left, x, x_axis_right, x, dashedLinePaint);
+                // 绘制文字标签
+                DecimalFormat decimalFormat = new DecimalFormat("#.##");
+                // 格式化数字，并转换为字符串
+                String label = decimalFormat.format(top_num * y_interval);
+                float labelWidth = text_paint.measureText(label);
+                canvas.drawText(label, -labelWidth - 20, x + 15/ sx, text_paint);
+            }
+            for (bottom_num = 1; bottom_num * y_interval * sx * scaleNumY < y_axis_bottom; bottom_num++) {
+                x = (float) (bottom_num * y_interval * scaleNumY);
+                canvas.drawLine(0, x, 20 / sx, x, xaxis_paint);
+                canvas.drawLine(x_axis_left, x, x_axis_right, x, dashedLinePaint);
+                // 绘制文字标签
+                DecimalFormat decimalFormat = new DecimalFormat("#.##");
+                // 格式化数字，并转换为字符串
+                String label = decimalFormat.format(-bottom_num * y_interval);
+                float labelWidth = text_paint.measureText(label);
+                canvas.drawText(label, -labelWidth - 20, x + 15/ sx, text_paint);
+            }
+        }
+
+        canvas.drawText("0", -10/ sx, 40/ sx, text_paint);
         //绘制开始圆点
         canvas.drawCircle(xyList.get(0).x * scaleNumX, xyList.get(0).y * scaleNumY, 1.0f, start_point_paint);
 
@@ -272,7 +450,6 @@ public class MapView extends View {
             //绘制终点文字
             canvas.drawText("终点", xyList.get(xyList.size() - 1).x * scaleNumX, xyList.get(xyList.size() - 1).y * scaleNumY, text_paint);
         }
-
     }
 
     /**
@@ -335,5 +512,27 @@ public class MapView extends View {
         reset();
         invalidate();
     }
+
+    private static double findClosestNumber(double num) {
+        if (num == 0.0) return 1.0; // 边界情况：如果给定数为 0，则返回 1
+
+        double absNum = Math.abs(num); // 转换为正数进行处理
+
+        double magnitude = 1.0;
+        while (magnitude <= absNum) {
+            magnitude *= 10.0; // 找到给定数的数量级
+        }
+
+        // 根据数量级选择最接近的数
+        double closestNumber;
+        if (absNum % (magnitude / 10.0) >= magnitude / 20.0) {
+            closestNumber = magnitude / 2.0;
+        } else {
+            closestNumber = magnitude / 10.0;
+        }
+
+        return num < 0 ? -closestNumber : closestNumber; // 如果原数为负数，则返回负数形式的最接近数
+    }
+
 
 }

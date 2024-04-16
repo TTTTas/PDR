@@ -23,14 +23,18 @@ public class RealtimeProcessor {
     private static long lastStepTimeDiff=0;
     private static long currentStepTimeDiff=0;
 
-
+    public void reset(){
+        Yaw=0.0;
+        isStep = false;
+        Step_length=0.75;
+        Pos=new double[]{0,0};
+    }
 
     public RealtimeProcessor(){
         Yaw=0.0;
         isStep = false;
         Step_length=0.75;
         Pos=new double[]{0,0};
-
     }
 
     private void processGyro(SensorEvent event){
